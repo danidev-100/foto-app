@@ -39,6 +39,14 @@ var (
 	ErrInvalidStatus      = NewDomainError("ORD_001", "invalid status transition")
 	ErrOrderNotCancellable = NewDomainError("ORD_002", "order cannot be cancelled in current status")
 
+	// CAT — Catalog domain errors
+	ErrCourseNotFound   = NewDomainError("CAT_001", "course not found")
+	ErrDivisionNotFound = NewDomainError("CAT_002", "division not found")
+	ErrBookletNotFound  = NewDomainError("CAT_003", "booklet not found")
+	ErrInvalidColorType = NewDomainError("CAT_004", "invalid color type, must be 'bw' or 'color'")
+	ErrNegativePrice    = NewDomainError("CAT_005", "price must be non-negative")
+	ErrNegativeStock    = NewDomainError("CAT_006", "stock must be non-negative")
+
 	// PAY — Payment domain errors
 	ErrPaymentFailed  = NewDomainError("PAY_001", "payment processing failed")
 	ErrInvalidPayment = NewDomainError("PAY_002", "invalid payment method")
