@@ -60,13 +60,22 @@ func main() {
 		DisableStartupMessage: false,
 	})
 
-	// ── Dependencies ───────────────────────────────────────────────────
+	// ── Repositories ───────────────────────────────────────────────────
 	studentRepo := repository.NewStudentRepo(pool)
+	courseRepo := repository.NewCourseRepo(pool)
+	divisionRepo := repository.NewDivisionRepo(pool)
+	bookletRepo := repository.NewBookletRepo(pool)
+
+	// ── Services ───────────────────────────────────────────────────────
 	authService := service.NewAuthService(studentRepo, cfg.JWTSecret, cfg.JWTExpiration)
+	catalogService := service.NewCatalogService(courseRepo, divisionRepo, bookletRepo)
+
+	// ── Handlers ───────────────────────────────────────────────────────
 	authHandler := handler.NewAuthHandler(authService)
+	catalogHandler := handler.NewCatalogHandler(catalogService)
 
 	// ── Routes ─────────────────────────────────────────────────────────
-	http.SetupRoutes(app, logger, authHandler)
+	http.SetupRoutes(app, logger, authHandler, catalogHandler, cfg.JWTSecret)
 
 	// ── Graceful shutdown ──────────────────────────────────────────────
 	go func() {
