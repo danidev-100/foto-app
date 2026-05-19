@@ -17,6 +17,9 @@ func SetupRoutes(
 	logger *zap.Logger,
 	authHandler *handler.AuthHandler,
 	catalogHandler *handler.CatalogHandler,
+	cartHandler *handler.CartHandler,
+	orderHandler *handler.OrderHandler,
+	paymentHandler *handler.PaymentHandler,
 	jwtSecret string,
 ) {
 	// --- Global middleware stack (applied to all routes) ---
@@ -63,4 +66,39 @@ func SetupRoutes(
 	admin.Post("/booklets", catalogHandler.CreateBooklet)
 	admin.Put("/booklets/:id", catalogHandler.UpdateBooklet)
 	admin.Delete("/booklets/:id", catalogHandler.DeleteBooklet)
+
+	// --- Slice 4: Cart routes (all require auth) ---
+	cart := api.Group("/cart")
+	cart.Use(middleware.AuthMiddleware(jwtSecret))
+	cart.Get("/", cartHandler.GetCart)
+	cart.Post("/items", cartHandler.AddItem)
+	cart.Put("/items/:booklet_id", cartHandler.UpdateItem)
+	cart.Delete("/items/:booklet_id", cartHandler.RemoveItem)
+	cart.Delete("/", cartHandler.ClearCart)
+
+	// --- Slice 5: Order routes (student-facing, all require auth) ---
+	orders := api.Group("/orders")
+	orders.Use(middleware.AuthMiddleware(jwtSecret))
+	orders.Post("/", orderHandler.PlaceOrder)
+	orders.Get("/", orderHandler.ListOrders)
+	orders.Get("/:id", orderHandler.GetOrder)
+	orders.Post("/:id/cancel", orderHandler.CancelOrder)
+
+	// --- Slice 5: Admin order routes (auth + admin) ---
+	adminOrders := admin.Group("/orders")
+	adminOrders.Get("/", orderHandler.ListAllOrders)
+	adminOrders.Get("/:id", orderHandler.GetOrderAdmin)
+	adminOrders.Put("/:id/status", orderHandler.UpdateOrderStatus)
+
+	// --- Slice 6: Payment routes ---
+
+	// Student-facing: initiate payment for an order
+	orders.Post("/:id/pay", paymentHandler.InitiatePayment)
+
+	// Webhook: MP IPN (no auth — validated by idempotency)
+	webhook := app.Group("/api/webhooks")
+	webhook.Post("/mercadopago", paymentHandler.HandleMPWebhook)
+
+	// Admin: confirm cash payment
+	admin.Post("/orders/:id/pay-cash", paymentHandler.ConfirmCashPayment)
 }

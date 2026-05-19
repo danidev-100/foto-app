@@ -13,6 +13,7 @@ import (
 
 	"foto-app/internal/adapter/http"
 	"foto-app/internal/adapter/http/handler"
+	"foto-app/internal/adapter/payment"
 	"foto-app/internal/adapter/repository"
 	"foto-app/internal/config"
 	"foto-app/internal/domain/service"
@@ -65,17 +66,32 @@ func main() {
 	courseRepo := repository.NewCourseRepo(pool)
 	divisionRepo := repository.NewDivisionRepo(pool)
 	bookletRepo := repository.NewBookletRepo(pool)
+	cartRepo := repository.NewCartRepo(pool)
+	orderRepo := repository.NewOrderRepo(pool)
+	paymentRepo := repository.NewPaymentRepo(pool)
+
+	// ── Payment Gateway ────────────────────────────────────────────────
+	mpGateway, err := payment.NewMercadoPago(cfg.MPAccessToken, cfg.MPSandbox)
+	if err != nil {
+		logger.Fatal("failed to create Mercado Pago gateway", zap.Error(err))
+	}
 
 	// ── Services ───────────────────────────────────────────────────────
 	authService := service.NewAuthService(studentRepo, cfg.JWTSecret, cfg.JWTExpiration)
 	catalogService := service.NewCatalogService(courseRepo, divisionRepo, bookletRepo)
+	cartService := service.NewCartService(cartRepo, bookletRepo)
+	orderService := service.NewOrderService(pool, orderRepo, cartRepo, bookletRepo)
+	paymentService := service.NewPaymentService(paymentRepo, orderRepo, mpGateway)
 
 	// ── Handlers ───────────────────────────────────────────────────────
 	authHandler := handler.NewAuthHandler(authService)
 	catalogHandler := handler.NewCatalogHandler(catalogService)
+	cartHandler := handler.NewCartHandler(cartService)
+	orderHandler := handler.NewOrderHandler(orderService)
+	paymentHandler := handler.NewPaymentHandler(paymentService)
 
 	// ── Routes ─────────────────────────────────────────────────────────
-	http.SetupRoutes(app, logger, authHandler, catalogHandler, cfg.JWTSecret)
+	http.SetupRoutes(app, logger, authHandler, catalogHandler, cartHandler, orderHandler, paymentHandler, cfg.JWTSecret)
 
 	// ── Graceful shutdown ──────────────────────────────────────────────
 	go func() {

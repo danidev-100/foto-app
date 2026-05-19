@@ -48,6 +48,10 @@ var (
 	ErrNegativeStock    = NewDomainError("CAT_006", "stock must be non-negative")
 
 	// PAY — Payment domain errors
-	ErrPaymentFailed  = NewDomainError("PAY_001", "payment processing failed")
-	ErrInvalidPayment = NewDomainError("PAY_002", "invalid payment method")
+	ErrPaymentFailed     = NewDomainError("PAY_001", "payment processing failed")
+	ErrInvalidPayment    = NewDomainError("PAY_002", "invalid payment method")
+	ErrOrderAlreadyPaid  = NewDomainError("PAY_003", "order already paid")
+	ErrEventAlreadyProcessed = NewDomainError("PAY_004", "webhook event already processed")
+	ErrWebhookValidation = NewDomainError("PAY_005", "invalid webhook signature")
+	ErrNotCashPayment    = NewDomainError("PAY_006", "payment method is not cash")
 )
