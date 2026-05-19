@@ -12,7 +12,10 @@ import (
 	"go.uber.org/zap"
 
 	"foto-app/internal/adapter/http"
+	"foto-app/internal/adapter/http/handler"
+	"foto-app/internal/adapter/repository"
 	"foto-app/internal/config"
+	"foto-app/internal/domain/service"
 	"foto-app/pkg/database"
 )
 
@@ -57,8 +60,13 @@ func main() {
 		DisableStartupMessage: false,
 	})
 
+	// ── Dependencies ───────────────────────────────────────────────────
+	studentRepo := repository.NewStudentRepo(pool)
+	authService := service.NewAuthService(studentRepo, cfg.JWTSecret, cfg.JWTExpiration)
+	authHandler := handler.NewAuthHandler(authService)
+
 	// ── Routes ─────────────────────────────────────────────────────────
-	http.SetupRoutes(app, logger)
+	http.SetupRoutes(app, logger, authHandler)
 
 	// ── Graceful shutdown ──────────────────────────────────────────────
 	go func() {

@@ -11,9 +11,8 @@ import (
 )
 
 // SetupRoutes configures all routes, middleware, and handlers on the Fiber app.
-// Slice 1 registers only the health endpoint. Subsequent slices add their
-// domain routes by calling RegisterRoutes on each handler group.
-func SetupRoutes(app *fiber.App, logger *zap.Logger) {
+// Each slice registers its domain routes via handler parameters.
+func SetupRoutes(app *fiber.App, logger *zap.Logger, authHandler *handler.AuthHandler) {
 	// --- Global middleware stack (applied to all routes) ---
 	app.Use(middleware.Logger(logger))
 	app.Use(recover.New())
@@ -26,12 +25,9 @@ func SetupRoutes(app *fiber.App, logger *zap.Logger) {
 	// --- Public endpoints (no auth required) ---
 	app.Get("/api/health", handler.HealthCheck)
 
-	// --- Route groups for subsequent slices ---
-	// Slices 2-6 will register their routes here via:
-	//   api := app.Group("/api")
-	//   auth := api.Group("/auth")        // Slice 2
-	//   catalog := api.Group("/catalog")  // Slice 3
-	//   cart := api.Group("/cart")        // Slice 4
-	//   orders := api.Group("/orders")    // Slice 5
-	//   admin := api.Group("/admin")      // Slices 2-6 admin routes
+	// --- Slice 2: Auth routes ---
+	api := app.Group("/api")
+	auth := api.Group("/auth")
+	auth.Post("/register", authHandler.Register)
+	auth.Post("/login", authHandler.Login)
 }
