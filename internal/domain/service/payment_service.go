@@ -274,7 +274,7 @@ func (s *PaymentService) HandleMPWebhook(ctx context.Context, rawBody json.RawMe
 	switch mpInfo.Status {
 	case "approved":
 		paymentStatus = model.PaymentStatusApproved
-		orderStatus = model.OrderStatusConfirmed
+		orderStatus = model.OrderStatusPending // stays pending until admin marks as ready
 		now := time.Now()
 		paidAt = &now
 	case "rejected", "cancelled":
@@ -283,7 +283,7 @@ func (s *PaymentService) HandleMPWebhook(ctx context.Context, rawBody json.RawMe
 		paidAt = nil
 	case "refunded":
 		paymentStatus = model.PaymentStatusRefunded
-		orderStatus = model.OrderStatusConfirmed // order stays confirmed, just payment refunded
+		orderStatus = model.OrderStatusPending // payment refunded, order back to pending
 		paidAt = nil
 	default:
 		// "pending" or "in_process" — leave as-is
@@ -370,7 +370,7 @@ func (s *PaymentService) ConfirmCashPayment(ctx context.Context, orderID uuid.UU
 	}
 
 	// Update order
-	if err := s.orderRepo.UpdatePaymentInfo(ctx, orderID, model.PaymentStatusPaid, model.OrderStatusConfirmed); err != nil {
+	if err := s.orderRepo.UpdatePaymentInfo(ctx, orderID, model.PaymentStatusPaid, model.OrderStatusPending); err != nil {
 		return fmt.Errorf("update order payment info: %w", err)
 	}
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   adminGetCourses, adminGetDivisions,
   adminGetBooklets, adminCreateBooklet, adminUpdateBooklet, adminDeleteBooklet,
-  adminGetOrders,
+  adminGetOrders, adminUpdateOrderStatus,
   adminSearchOrderByID, adminSearchOrdersByStudentName, adminSearchOrdersByBookletTitle,
 } from '../api/admin';
 import { listStudents, updateStudent } from '../api/students';
@@ -104,7 +104,7 @@ export default function Admin() {
   const loadOrders = async () => {
     try {
       console.log('Loading orders...');
-      const res = await adminGetOrders({ status: 'pending' });
+      const res = await adminGetOrders();
       console.log('Orders response:', res.data);
       const responseData = res.data.data || {};
       console.log('Response data:', responseData);
@@ -177,6 +177,74 @@ export default function Admin() {
   const clearSearchBooklet = () => {
     setSearchBookletTitle('');
     setSearchBookletResults([]);
+  };
+
+  const advanceOrderStatus = async (orderId, currentStatus) => {
+    const nextStatus = currentStatus === 'pending' ? 'ready' : 'delivered';
+    try {
+      await adminUpdateOrderStatus(orderId, { status: nextStatus });
+      const labels = { ready: 'Listo', delivered: 'Retirado' };
+      showToast(`Pedido marcado como: ${labels[nextStatus]}`);
+      // Update local state
+      setOrders(prev => prev.map(od =>
+        od.order.id === orderId ? { ...od, order: { ...od.order, status: nextStatus } } : od
+      ));
+      // Refresh booklet search results
+      if (searchBookletResults.length > 0) {
+        handleSearchBookletTitle();
+      }
+    } catch {
+      showToast('Error al actualizar estado', 'error');
+    }
+  };
+
+  const updateOrderStatus = async (orderId, newStatus) => {
+    try {
+      await adminUpdateOrderStatus(orderId, { status: newStatus });
+      const statusLabels = {
+        pending: 'Pendiente',
+        ready: 'Listo',
+        delivered: 'Retirado',
+        cancelled: 'Cancelado',
+      };
+      showToast(`Estado cambiado a: ${statusLabels[newStatus]}`);
+      // Refresh all data
+      setOrders(prev => prev.map(od =>
+        od.order.id === orderId ? { ...od, order: { ...od.order, status: newStatus } } : od
+      ));
+      if (searchBookletResults.length > 0) handleSearchBookletTitle();
+      if (searchStudentResults.length > 0) handleSearchStudentName();
+      if (searchOrderResult) handleSearchOrderId();
+    } catch {
+      showToast('Error al actualizar estado', 'error');
+    }
+  };
+
+  const StatusBadge = ({ status, orderId }) => {
+    const styles = {
+      pending: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800',
+      ready: 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800',
+      delivered: 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800',
+      cancelled: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800',
+    };
+    const labels = {
+      pending: 'Pendiente',
+      ready: 'Listo',
+      delivered: 'Retirado',
+      cancelled: 'Cancelado',
+    };
+    return (
+      <select
+        value={status}
+        onChange={(e) => updateOrderStatus(orderId, e.target.value)}
+        className={`text-xs font-medium rounded-md px-2 py-1 border-0 cursor-pointer ${styles[status] || styles.pending}`}
+      >
+        <option value="pending">Pendiente</option>
+        <option value="ready">Listo</option>
+        <option value="delivered">Retirado</option>
+        <option value="cancelled">Cancelado</option>
+      </select>
+    );
   };
 
   useEffect(() => { loadData(); }, []);
@@ -771,12 +839,7 @@ export default function Admin() {
                     </td>
                     <td className="px-5 py-3 text-right font-bold text-surface-900 dark:text-surface-100">{formatPrice(searchOrderResult.order.total)}</td>
                     <td className="px-5 py-3">
-                      <span className={`badge ${
-                        searchOrderResult.order.status === 'pending' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800' :
-                        searchOrderResult.order.status === 'confirmed' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800' :
-                        searchOrderResult.order.status === 'delivered' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' :
-                        'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'
-                      }`}>{searchOrderResult.order.status}</span>
+                      <StatusBadge status={searchOrderResult.order.status} orderId={searchOrderResult.order.id} />
                     </td>
                     <td className="px-5 py-3">
                       <span className={`badge ${
@@ -835,15 +898,16 @@ export default function Admin() {
                             ))}
                           </div>
                         </td>
-                        <td className="px-5 py-3 text-right font-bold text-surface-900 dark:text-surface-100">{formatPrice(order.total)}</td>
-                        <td className="px-5 py-3">
-                          <span className={`badge ${
-                            order.status === 'pending' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800' :
-                            order.status === 'confirmed' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800' :
-                            order.status === 'delivered' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' :
-                            'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'
-                          }`}>{order.status}</span>
-                        </td>
+                    <td className="px-5 py-3 text-right font-bold text-surface-900 dark:text-surface-100">{formatPrice(order.total)}</td>
+                    <td className="px-5 py-3">
+                      <button
+                        onClick={() => markAsDelivered(order.id)}
+                        className="badge bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/30 hover:text-green-700 dark:hover:text-green-400 hover:ring-green-200 dark:hover:ring-green-800 transition-colors"
+                        title="Clic para marcar como retirado"
+                      >
+                        Pendiente → Retirado
+                      </button>
+                    </td>
                       </tr>
                     );
                   })}
@@ -871,6 +935,7 @@ export default function Admin() {
                     <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Cuadernillo</th>
                     <th className="text-right px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Cantidad</th>
                     <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Estado</th>
+                    <th className="text-right px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
@@ -888,24 +953,39 @@ export default function Admin() {
                         <span className="text-lg font-bold text-primary-600 dark:text-primary-400">{result.quantity}x</span>
                       </td>
                       <td className="px-5 py-3">
-                        <span className={`badge ${
-                          result.order_status === 'pending' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800' :
-                          result.order_status === 'confirmed' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800' :
-                          result.order_status === 'delivered' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' :
-                          'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'
-                        }`}>{result.order_status}</span>
+                        <StatusBadge status={result.order_status} orderId={result.order_id} />
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        {result.order_status === 'pending' && (
+                          <button
+                            onClick={() => markAsDelivered(result.order_id)}
+                            className="btn-secondary text-xs bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 ring-1 ring-green-200 dark:ring-green-800"
+                          >
+                            Retirado
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
+                  {/* Total row */}
+                  <tr className="bg-surface-50 dark:bg-surface-800 font-semibold">
+                    <td colSpan="3" className="px-5 py-3 text-right text-surface-700 dark:text-surface-300">
+                      Total de cuadernillos:
+                    </td>
+                    <td className="px-5 py-3 text-right text-primary-700 dark:text-primary-400 text-lg">
+                      {searchBookletResults.reduce((sum, r) => sum + r.quantity, 0)}x
+                    </td>
+                    <td colSpan="2"></td>
+                  </tr>
                 </tbody>
               </table>
             </div>
           )}
 
-          {/* All Pending Orders Table */}
+          {/* All Orders Table */}
           <div className="card overflow-hidden">
             <div className="px-5 py-3 bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
-              <h4 className="font-semibold text-surface-900 dark:text-surface-100 text-sm">Todos los Pedidos Pendientes</h4>
+              <h4 className="font-semibold text-surface-900 dark:text-surface-100 text-sm">Todos los Pedidos</h4>
             </div>
             <table className="w-full text-sm">
             <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
@@ -943,7 +1023,19 @@ export default function Admin() {
                     </td>
                     <td className="px-5 py-3 text-right font-bold text-surface-900 dark:text-surface-100">{formatPrice(order.total)}</td>
                     <td className="px-5 py-3">
-                      <span className="badge bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800">Pendiente</span>
+                      {order.status === 'delivered' ? (
+                        <span className="badge bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800">Retirado</span>
+                      ) : order.status === 'ready' ? (
+                        <span className="badge bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800">Listo</span>
+                      ) : (
+                        <button
+                          onClick={() => advanceOrderStatus(order.id, 'pending')}
+                          className="badge bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-400 hover:ring-blue-200 dark:hover:ring-blue-800 transition-colors"
+                          title="Clic para marcar como listo"
+                        >
+                          Pendiente → Listo
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -951,7 +1043,7 @@ export default function Admin() {
             </tbody>
           </table>
           {orders.length === 0 && (
-            <div className="text-center py-8 text-surface-500 dark:text-surface-400">No hay pedidos pendientes.</div>
+            <div className="text-center py-8 text-surface-500 dark:text-surface-400">No hay pedidos.</div>
           )}
         </div>
       </div>

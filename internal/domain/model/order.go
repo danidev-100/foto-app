@@ -10,8 +10,7 @@ import (
 // Order status constants matching the order_status DB enum.
 const (
 	OrderStatusPending   = "pending"
-	OrderStatusConfirmed = "confirmed"
-	OrderStatusShipped   = "shipped"
+	OrderStatusReady     = "ready"
 	OrderStatusDelivered = "delivered"
 	OrderStatusCancelled = "cancelled"
 )
@@ -47,7 +46,7 @@ type Order struct {
 
 // IsCancellable returns true if the order can be cancelled.
 func (o *Order) IsCancellable() bool {
-	return o.Status == OrderStatusPending || o.Status == OrderStatusConfirmed
+	return o.Status == OrderStatusPending || o.Status == OrderStatusReady
 }
 
 // BookletOrderResult represents a student's order containing a specific booklet.

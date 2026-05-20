@@ -356,7 +356,7 @@ func (s *OrderService) CancelOrder(ctx context.Context, studentID uuid.UUID, ord
 	if err != nil {
 		return nil, fmt.Errorf("lock order: %w", err)
 	}
-	if currentStatus != model.OrderStatusPending && currentStatus != model.OrderStatusConfirmed {
+	if currentStatus != model.OrderStatusPending && currentStatus != model.OrderStatusReady {
 		return nil, model.ErrOrderNotCancellable
 	}
 
