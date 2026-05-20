@@ -85,12 +85,17 @@ export default function Admin() {
 
   const loadOrders = async () => {
     try {
+      console.log('Loading orders...');
       const res = await adminGetOrders({ status: 'pending' });
-      const data = res.data.data || {};
-      setOrders(data.orders || []);
-      setStudentNames(data.student_names || {});
-    } catch {
-      showToast('Error al cargar pedidos', 'error');
+      console.log('Orders response:', res.data);
+      const responseData = res.data.data || {};
+      console.log('Response data:', responseData);
+      setOrders(responseData.orders || []);
+      setStudentNames(responseData.student_names || {});
+    } catch (error) {
+      console.error('Error loading orders:', error);
+      console.error('Error response:', error.response?.data);
+      showToast(`Error al cargar pedidos: ${error.response?.data?.error?.message || error.message}`, 'error');
     }
   };
 

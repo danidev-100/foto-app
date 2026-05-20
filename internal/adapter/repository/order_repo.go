@@ -253,12 +253,6 @@ func (r *OrderRepo) ListAllWithStudentName(ctx context.Context, status string, p
 	}
 	defer rows.Close()
 
-	// Scan orders with student names
-	type orderWithStudent struct {
-		model.Order
-		StudentName string `db:"student_name"`
-	}
-
 	var orders []model.Order
 	studentNames := make(map[uuid.UUID]string)
 
