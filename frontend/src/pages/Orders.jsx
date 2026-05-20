@@ -90,7 +90,9 @@ export default function Orders() {
         <div className="space-y-4">
           {orders.map((order) => {
             const status = statusConfig[order.status] || statusConfig.pending;
-            const isCancellable = order.status === 'pending' || order.status === 'confirmed';
+            const payment = paymentConfig[order.payment_status] || paymentConfig.pending;
+            const showPayButton = order.payment_method === 'mercadopago' && order.payment_status !== 'paid';
+            const showCancelButton = order.status === 'pending';
             const isLoading = actionLoading === `cancel-${order.id}` || actionLoading === `pay-${order.id}`;
 
             return (
@@ -101,7 +103,10 @@ export default function Orders() {
                     <span className="text-sm font-medium text-surface-900">Pedido #{order.id.slice(0, 8)}</span>
                     <p className="text-xs text-surface-500 mt-0.5">{formatDate(order.created_at)}</p>
                   </div>
-                  <span className={status.className}>{status.label}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={payment.className}>{payment.label}</span>
+                    <span className={status.className}>{status.label}</span>
+                  </div>
                 </div>
 
                 {/* Items */}
@@ -124,27 +129,31 @@ export default function Orders() {
                 {/* Footer */}
                 <div className="px-5 py-4 bg-surface-50 flex items-center justify-between">
                   <span className="text-lg font-bold text-surface-900">{formatPrice(order.total)}</span>
-                  {isCancellable && (
+                  {(showPayButton || showCancelButton) && (
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => handlePay(order.id)}
-                        disabled={isLoading}
-                        className="btn-primary text-sm"
-                      >
-                        {isLoading ? (
-                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                        ) : 'Pagar con MP'}
-                      </button>
-                      <button
-                        onClick={() => handleCancel(order.id)}
-                        disabled={isLoading}
-                        className="btn-secondary text-sm text-red-600 hover:text-red-700 hover:bg-red-50 ring-red-200"
-                      >
-                        Cancelar
-                      </button>
+                      {showPayButton && (
+                        <button
+                          onClick={() => handlePay(order.id)}
+                          disabled={isLoading}
+                          className="btn-primary text-sm"
+                        >
+                          {isLoading ? (
+                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                          ) : 'Pagar con MP'}
+                        </button>
+                      )}
+                      {showCancelButton && (
+                        <button
+                          onClick={() => handleCancel(order.id)}
+                          disabled={isLoading}
+                          className="btn-secondary text-sm text-red-600 hover:text-red-700 hover:bg-red-50 ring-red-200"
+                        >
+                          Cancelar
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
