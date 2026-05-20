@@ -398,6 +398,47 @@ func (s *OrderService) AdminListOrders(ctx context.Context, status string, page,
 	return s.orderRepo.ListAll(ctx, status, page, limit)
 }
 
+// AdminListOrdersWithDetails returns all orders with student names and items, optionally filtered by status.
+func (s *OrderService) AdminListOrdersWithDetails(ctx context.Context, status string, page, limit int) ([]OrderDetailResponse, map[uuid.UUID]string, int, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 50 {
+		limit = 10
+	}
+
+	orders, studentNames, total, err := s.orderRepo.ListAllWithStudentName(ctx, status, page, limit)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	if len(orders) == 0 {
+		return []OrderDetailResponse{}, studentNames, 0, nil
+	}
+
+	// Batch load items for all orders
+	orderIDs := make([]uuid.UUID, len(orders))
+	for i, o := range orders {
+		orderIDs[i] = o.ID
+	}
+
+	itemsMap, err := s.orderRepo.FindItemsByOrderIDs(ctx, orderIDs)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	// Combine orders with their items
+	result := make([]OrderDetailResponse, len(orders))
+	for i, o := range orders {
+		result[i] = OrderDetailResponse{
+			Order: &o,
+			Items: itemsMap[o.ID],
+		}
+	}
+
+	return result, studentNames, total, nil
+}
+
 // AdminUpdateOrderStatus updates the status of any order.
 func (s *OrderService) AdminUpdateOrderStatus(ctx context.Context, orderID uuid.UUID, status string) error {
 	return s.orderRepo.UpdateStatus(ctx, orderID, status)

@@ -204,6 +204,82 @@ func (r *OrderRepo) ListAll(ctx context.Context, status string, page, limit int)
 	return orders, total, nil
 }
 
+// ListAllWithStudentName returns paginated orders for admin view with student names.
+func (r *OrderRepo) ListAllWithStudentName(ctx context.Context, status string, page, limit int) ([]model.Order, map[uuid.UUID]string, int, error) {
+	offset := (page - 1) * limit
+
+	var total int
+	var countQuery string
+	var dataQuery string
+	var args []any
+
+	if status != "" {
+		countQuery = `SELECT COUNT(*) FROM orders WHERE status = $1`
+		dataQuery = `SELECT o.id, o.student_id, o.total, o.status, o.payment_method, o.payment_status,
+		              o.mp_preference_id, o.notes, o.delivery_date, o.created_at, o.updated_at,
+		              s.name as student_name
+		              FROM orders o JOIN students s ON o.student_id = s.id
+		              WHERE o.status = $1
+		              ORDER BY o.created_at DESC LIMIT $2 OFFSET $3`
+		args = []any{status, limit, offset}
+
+		err := r.pool.QueryRow(ctx, countQuery, status).Scan(&total)
+		if err != nil {
+			return nil, nil, 0, fmt.Errorf("count orders: %w", err)
+		}
+	} else {
+		countQuery = `SELECT COUNT(*) FROM orders`
+		dataQuery = `SELECT o.id, o.student_id, o.total, o.status, o.payment_method, o.payment_status,
+		              o.mp_preference_id, o.notes, o.delivery_date, o.created_at, o.updated_at,
+		              s.name as student_name
+		              FROM orders o JOIN students s ON o.student_id = s.id
+		              ORDER BY o.created_at DESC LIMIT $1 OFFSET $2`
+
+		err := r.pool.QueryRow(ctx, countQuery).Scan(&total)
+		if err != nil {
+			return nil, nil, 0, fmt.Errorf("count orders: %w", err)
+		}
+
+		args = []any{limit, offset}
+	}
+
+	if total == 0 {
+		return []model.Order{}, map[uuid.UUID]string{}, 0, nil
+	}
+
+	rows, err := r.pool.Query(ctx, dataQuery, args...)
+	if err != nil {
+		return nil, nil, 0, fmt.Errorf("query all orders: %w", err)
+	}
+	defer rows.Close()
+
+	// Scan orders with student names
+	type orderWithStudent struct {
+		model.Order
+		StudentName string `db:"student_name"`
+	}
+
+	var orders []model.Order
+	studentNames := make(map[uuid.UUID]string)
+
+	for rows.Next() {
+		var o model.Order
+		var studentName string
+		err := rows.Scan(
+			&o.ID, &o.StudentID, &o.Total, &o.Status, &o.PaymentMethod, &o.PaymentStatus,
+			&o.MPPreferenceID, &o.Notes, &o.DeliveryDate, &o.CreatedAt, &o.UpdatedAt,
+			&studentName,
+		)
+		if err != nil {
+			return nil, nil, 0, fmt.Errorf("scan order: %w", err)
+		}
+		orders = append(orders, o)
+		studentNames[o.StudentID] = studentName
+	}
+
+	return orders, studentNames, total, rows.Err()
+}
+
 // UpdateStatus changes the order's status and sets updated_at to NOW().
 func (r *OrderRepo) UpdateStatus(ctx context.Context, id uuid.UUID, status string) error {
 	query := `UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2`

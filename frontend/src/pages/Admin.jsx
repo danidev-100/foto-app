@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import {
   adminGetCourses, adminGetDivisions,
   adminGetBooklets, adminCreateBooklet, adminUpdateBooklet, adminDeleteBooklet,
+  adminGetOrders,
 } from '../api/admin';
+import api from '../api/client';
 
 // Structured course data: level -> grades -> divisions
 const COURSE_STRUCTURE = {
@@ -37,9 +39,12 @@ const COURSE_STRUCTURE = {
 };
 
 export default function Admin() {
+  const [activeTab, setActiveTab] = useState('booklets');
   const [courses, setCourses] = useState([]);
   const [divisions, setDivisions] = useState([]);
   const [booklets, setBooklets] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [studentNames, setStudentNames] = useState({});
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
 
@@ -78,7 +83,19 @@ export default function Admin() {
     }
   };
 
+  const loadOrders = async () => {
+    try {
+      const res = await adminGetOrders({ status: 'pending' });
+      const data = res.data.data || {};
+      setOrders(data.orders || []);
+      setStudentNames(data.student_names || {});
+    } catch {
+      showToast('Error al cargar pedidos', 'error');
+    }
+  };
+
   useEffect(() => { loadData(); }, []);
+  useEffect(() => { if (activeTab === 'orders') loadOrders(); }, [activeTab]);
 
   // When level/grade change, reset division selection
   useEffect(() => {
@@ -263,7 +280,36 @@ export default function Admin() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-surface-900">Panel de Administración</h1>
-        <p className="mt-1 text-surface-500">Gestioná cuadernillos.</p>
+        <p className="mt-1 text-surface-500">Gestioná cuadernillos y pedidos.</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => setActiveTab('booklets')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === 'booklets'
+              ? 'bg-primary-100 text-primary-700 ring-1 ring-primary-300'
+              : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
+          }`}
+        >
+          Cuadernillos
+        </button>
+        <button
+          onClick={() => setActiveTab('orders')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === 'orders'
+              ? 'bg-primary-100 text-primary-700 ring-1 ring-primary-300'
+              : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
+          }`}
+        >
+          Pedidos Pendientes
+          {orders.length > 0 && (
+            <span className="ml-2 px-2 py-0.5 bg-primary-600 text-white text-xs rounded-full">
+              {orders.length}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Toast */}
@@ -275,7 +321,8 @@ export default function Admin() {
         </div>
       )}
 
-      {/* Booklets */}
+      {/* Booklets Tab */}
+      {activeTab === 'booklets' && (
       <div className="space-y-6">
         <div className="card p-5">
           <h3 className="font-semibold text-surface-900 mb-4">
@@ -488,6 +535,59 @@ export default function Admin() {
           )}
         </div>
       </div>
+      )}
+
+      {/* Orders Tab */}
+      {activeTab === 'orders' && (
+        <div className="card overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-surface-50 border-b border-surface-200">
+              <tr>
+                <th className="text-left px-5 py-3 font-medium text-surface-600">Pedido</th>
+                <th className="text-left px-5 py-3 font-medium text-surface-600">Usuario</th>
+                <th className="text-left px-5 py-3 font-medium text-surface-600">Cuadernillos</th>
+                <th className="text-right px-5 py-3 font-medium text-surface-600">Total</th>
+                <th className="text-left px-5 py-3 font-medium text-surface-600">Estado</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-surface-100">
+              {orders.map((orderData) => {
+                const order = orderData.order;
+                const items = orderData.items || [];
+                const studentName = studentNames[order.student_id] || '—';
+                return (
+                  <tr key={order.id} className="hover:bg-surface-50">
+                    <td className="px-5 py-3">
+                      <span className="font-medium text-surface-900">#{order.id.slice(0, 8)}</span>
+                      <p className="text-xs text-surface-500 mt-0.5">
+                        {new Date(order.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                    </td>
+                    <td className="px-5 py-3 text-surface-700">{studentName}</td>
+                    <td className="px-5 py-3">
+                      <div className="space-y-1">
+                        {items.map((item) => (
+                          <div key={item.id} className="flex items-center gap-2 text-surface-600">
+                            <span className="text-xs bg-surface-100 px-1.5 py-0.5 rounded">{item.quantity}x</span>
+                            <span className="text-sm">{item.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-right font-bold text-surface-900">{formatPrice(order.total)}</td>
+                    <td className="px-5 py-3">
+                      <span className="badge bg-amber-50 text-amber-700 ring-1 ring-amber-200">Pendiente</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {orders.length === 0 && (
+            <div className="text-center py-8 text-surface-500">No hay pedidos pendientes.</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

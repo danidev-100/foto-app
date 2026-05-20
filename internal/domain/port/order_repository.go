@@ -38,6 +38,10 @@ type OrderRepository interface {
 	// Returns (orders, totalCount, error).
 	ListAll(ctx context.Context, status string, page, limit int) ([]model.Order, int, error)
 
+	// ListAllWithStudentName returns paginated orders for admin view with student names.
+	// Optionally filtered by status. Returns (orders, studentNames, totalCount, error).
+	ListAllWithStudentName(ctx context.Context, status string, page, limit int) ([]model.Order, map[uuid.UUID]string, int, error)
+
 	// UpdateStatus changes the order's status and sets updated_at to NOW().
 	// Returns model.ErrNotFound if the order does not exist.
 	UpdateStatus(ctx context.Context, id uuid.UUID, status string) error

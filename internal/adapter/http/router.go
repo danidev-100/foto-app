@@ -90,6 +90,7 @@ func SetupRoutes(
 	// --- Slice 5: Admin order routes (auth + admin) ---
 	adminOrders := admin.Group("/orders")
 	adminOrders.Get("/", orderHandler.ListAllOrders)
+	adminOrders.Get("/details", orderHandler.ListAllOrdersWithDetails)
 	adminOrders.Get("/:id", orderHandler.GetOrderAdmin)
 	adminOrders.Put("/:id/status", orderHandler.UpdateOrderStatus)
 

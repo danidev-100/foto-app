@@ -151,6 +151,25 @@ func (h *OrderHandler) ListAllOrders(c *fiber.Ctx) error {
 	return response.PaginatedJSON(c, orders, page, limit, total)
 }
 
+// ListAllOrdersWithDetails handles GET /api/admin/orders/details.
+// Returns all orders with student names and items, paginated. Optional ?status= filter.
+func (h *OrderHandler) ListAllOrdersWithDetails(c *fiber.Ctx) error {
+	status := c.Query("status")
+	page, limit := parsePagination(c)
+
+	orders, studentNames, total, err := h.orderService.AdminListOrdersWithDetails(c.Context(), status, page, limit)
+	if err != nil {
+		return response.ErrorJSON(c, fiber.StatusInternalServerError, "INF_001", "failed to list orders", nil)
+	}
+
+	result := map[string]any{
+		"orders":        orders,
+		"student_names": studentNames,
+	}
+
+	return response.PaginatedJSON(c, result, page, limit, total)
+}
+
 // GetOrderAdmin handles GET /api/admin/orders/:id.
 // Returns any order with its items (admin — no student scoping).
 func (h *OrderHandler) GetOrderAdmin(c *fiber.Ctx) error {
