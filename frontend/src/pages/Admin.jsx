@@ -284,8 +284,8 @@ export default function Admin() {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-surface-900">Panel de Administración</h1>
-        <p className="mt-1 text-surface-500">Gestioná cuadernillos y pedidos.</p>
+        <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">Panel de Administración</h1>
+        <p className="mt-1 text-surface-500 dark:text-surface-400">Gestioná cuadernillos y pedidos.</p>
       </div>
 
       {/* Tabs */}
@@ -294,8 +294,8 @@ export default function Admin() {
           onClick={() => setActiveTab('booklets')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             activeTab === 'booklets'
-              ? 'bg-primary-100 text-primary-700 ring-1 ring-primary-300'
-              : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
+              ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-300 dark:ring-primary-700'
+              : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700'
           }`}
         >
           Cuadernillos
@@ -304,8 +304,8 @@ export default function Admin() {
           onClick={() => setActiveTab('orders')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             activeTab === 'orders'
-              ? 'bg-primary-100 text-primary-700 ring-1 ring-primary-300'
-              : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
+              ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-300 dark:ring-primary-700'
+              : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700'
           }`}
         >
           Pedidos Pendientes
@@ -320,7 +320,7 @@ export default function Admin() {
       {/* Toast */}
       {toast && (
         <div className={`fixed top-4 right-4 z-50 rounded-xl px-4 py-3 shadow-lg ring-1 ${
-          toast.type === 'success' ? 'bg-green-50 text-green-800 ring-green-200' : 'bg-red-50 text-red-800 ring-red-200'
+          toast.type === 'success' ? 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 ring-green-200 dark:ring-green-800' : 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300 ring-red-200 dark:ring-red-800'
         }`}>
           <span className="text-sm font-medium">{toast.message}</span>
         </div>
@@ -330,12 +330,12 @@ export default function Admin() {
       {activeTab === 'booklets' && (
       <div className="space-y-6">
         <div className="card p-5">
-          <h3 className="font-semibold text-surface-900 mb-4">
+          <h3 className="font-semibold text-surface-900 dark:text-surface-100 mb-4">
             {editingBooklet ? 'Editar cuadernillo' : 'Nuevo cuadernillo'}
           </h3>
 
           {/* Structured course selector */}
-          <div className="grid gap-4 sm:grid-cols-3 mb-4 p-4 bg-surface-50 rounded-xl">
+          <div className="grid gap-4 sm:grid-cols-3 mb-4 p-4 bg-surface-50 dark:bg-surface-800/50 rounded-xl">
             <div>
               <label className="label-field">Nivel</label>
               <select
@@ -376,8 +376,8 @@ export default function Admin() {
                       key={d}
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
                         checked
-                          ? 'bg-primary-100 text-primary-700 ring-1 ring-primary-300'
-                          : 'bg-white text-surface-600 ring-1 ring-surface-200 hover:ring-surface-300'
+                          ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-300 dark:ring-primary-700'
+                          : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 ring-1 ring-surface-200 dark:ring-surface-600 hover:ring-surface-300 dark:hover:ring-surface-500'
                       }`}
                     >
                       <input
@@ -398,7 +398,7 @@ export default function Admin() {
 
           {/* Booklet fields */}
           {errors.matchedCourse && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400">
               {errors.matchedCourse}
             </div>
           )}
@@ -456,11 +456,11 @@ export default function Admin() {
 
           {/* Confirmation */}
           {selLevel && selGrade && selDivisions.length > 0 && (
-            <p className="mt-3 text-sm text-surface-500">
-              Cuadernillo para: <span className="font-medium text-surface-700">{COURSE_STRUCTURE[selLevel].label} - {COURSE_STRUCTURE[selLevel].grades.find(g => g.value === selGrade)?.label} — Divisiones {selDivisions.join(', ')}</span>
-              {Object.keys(divisionMap).length === 0 && <span className="text-red-500 ml-2">(⚠ curso no encontrado en la base)</span>}
+            <p className="mt-3 text-sm text-surface-500 dark:text-surface-400">
+              Cuadernillo para: <span className="font-medium text-surface-700 dark:text-surface-300">{COURSE_STRUCTURE[selLevel].label} - {COURSE_STRUCTURE[selLevel].grades.find(g => g.value === selGrade)?.label} — Divisiones {selDivisions.join(', ')}</span>
+              {Object.keys(divisionMap).length === 0 && <span className="text-red-500 dark:text-red-400 ml-2">(⚠ curso no encontrado en la base)</span>}
               {Object.keys(divisionMap).length > 0 && Object.keys(divisionMap).length < selDivisions.length && (
-                <span className="text-amber-600 ml-2">
+                <span className="text-amber-600 dark:text-amber-400 ml-2">
                   ({Object.keys(divisionMap).length}/{selDivisions.length} encontradas en la base)
                 </span>
               )}
@@ -470,34 +470,34 @@ export default function Admin() {
 
         <div className="card overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-surface-50 border-b border-surface-200">
+            <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
               <tr>
-                <th className="text-left px-5 py-3 font-medium text-surface-600">Título</th>
-                <th className="text-left px-5 py-3 font-medium text-surface-600">Curso / División</th>
-                <th className="text-right px-5 py-3 font-medium text-surface-600">Precio</th>
-                <th className="text-left px-5 py-3 font-medium text-surface-600">Estado</th>
-                <th className="text-right px-5 py-3 font-medium text-surface-600">Acciones</th>
+                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Título</th>
+                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Curso / División</th>
+                <th className="text-right px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Precio</th>
+                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Estado</th>
+                <th className="text-right px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-100">
+            <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
               {booklets.map((b) => {
                 const course = courses.find((c) => c.id === b.course_id);
                 const division = divisions.find((d) => d.id === b.division_id);
                 const divNames = getDivisionsFromDesc(b.description);
                 return (
-                  <tr key={b.id} className="hover:bg-surface-50">
-                    <td className="px-5 py-3 font-medium text-surface-900">{b.title}</td>
-                    <td className="px-5 py-3 text-surface-500">
+                  <tr key={b.id} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
+                    <td className="px-5 py-3 font-medium text-surface-900 dark:text-surface-100">{b.title}</td>
+                    <td className="px-5 py-3 text-surface-500 dark:text-surface-400">
                       {course?.name}
                       {divNames && (
-                        <span className="ml-2 text-xs px-2 py-0.5 bg-primary-50 text-primary-700 rounded-md font-medium">
+                        <span className="ml-2 text-xs px-2 py-0.5 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 rounded-md font-medium">
                           {divNames}
                         </span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-right font-medium">{formatPrice(b.current_price)}</td>
+                    <td className="px-5 py-3 text-right font-medium text-surface-900 dark:text-surface-100">{formatPrice(b.current_price)}</td>
                     <td className="px-5 py-3">
-                      <span className={`badge ${b.is_active ? 'bg-green-50 text-green-700 ring-1 ring-green-200' : 'bg-surface-100 text-surface-500'}`}>
+                      <span className={`badge ${b.is_active ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' : 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'}`}>
                         {b.is_active ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
@@ -536,7 +536,7 @@ export default function Admin() {
             </tbody>
           </table>
           {booklets.length === 0 && (
-            <div className="text-center py-8 text-surface-500">No hay cuadernillos creados.</div>
+            <div className="text-center py-8 text-surface-500 dark:text-surface-400">No hay cuadernillos creados.</div>
           )}
         </div>
       </div>
@@ -546,42 +546,42 @@ export default function Admin() {
       {activeTab === 'orders' && (
         <div className="card overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-surface-50 border-b border-surface-200">
+            <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
               <tr>
-                <th className="text-left px-5 py-3 font-medium text-surface-600">Pedido</th>
-                <th className="text-left px-5 py-3 font-medium text-surface-600">Usuario</th>
-                <th className="text-left px-5 py-3 font-medium text-surface-600">Cuadernillos</th>
-                <th className="text-right px-5 py-3 font-medium text-surface-600">Total</th>
-                <th className="text-left px-5 py-3 font-medium text-surface-600">Estado</th>
+                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Pedido</th>
+                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Usuario</th>
+                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Cuadernillos</th>
+                <th className="text-right px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Total</th>
+                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Estado</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-100">
+            <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
               {orders.map((orderData) => {
                 const order = orderData.order;
                 const items = orderData.items || [];
                 const studentName = studentNames[order.student_id] || '—';
                 return (
-                  <tr key={order.id} className="hover:bg-surface-50">
+                  <tr key={order.id} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
                     <td className="px-5 py-3">
-                      <span className="font-medium text-surface-900">#{order.id.slice(0, 8)}</span>
-                      <p className="text-xs text-surface-500 mt-0.5">
+                      <span className="font-medium text-surface-900 dark:text-surface-100">#{order.id.slice(0, 8)}</span>
+                      <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
                         {new Date(order.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </p>
                     </td>
-                    <td className="px-5 py-3 text-surface-700">{studentName}</td>
+                    <td className="px-5 py-3 text-surface-700 dark:text-surface-300">{studentName}</td>
                     <td className="px-5 py-3">
                       <div className="space-y-1">
                         {items.map((item) => (
-                          <div key={item.id} className="flex items-center gap-2 text-surface-600">
-                            <span className="text-xs bg-surface-100 px-1.5 py-0.5 rounded">{item.quantity}x</span>
+                          <div key={item.id} className="flex items-center gap-2 text-surface-600 dark:text-surface-400">
+                            <span className="text-xs bg-surface-100 dark:bg-surface-700 px-1.5 py-0.5 rounded">{item.quantity}x</span>
                             <span className="text-sm">{item.title}</span>
                           </div>
                         ))}
                       </div>
                     </td>
-                    <td className="px-5 py-3 text-right font-bold text-surface-900">{formatPrice(order.total)}</td>
+                    <td className="px-5 py-3 text-right font-bold text-surface-900 dark:text-surface-100">{formatPrice(order.total)}</td>
                     <td className="px-5 py-3">
-                      <span className="badge bg-amber-50 text-amber-700 ring-1 ring-amber-200">Pendiente</span>
+                      <span className="badge bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800">Pendiente</span>
                     </td>
                   </tr>
                 );
@@ -589,7 +589,7 @@ export default function Admin() {
             </tbody>
           </table>
           {orders.length === 0 && (
-            <div className="text-center py-8 text-surface-500">No hay pedidos pendientes.</div>
+            <div className="text-center py-8 text-surface-500 dark:text-surface-400">No hay pedidos pendientes.</div>
           )}
         </div>
       )}

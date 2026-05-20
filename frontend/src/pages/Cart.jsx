@@ -106,16 +106,16 @@ export default function Cart() {
           <div key={item.id} className="card p-5">
             <div className="flex items-start gap-4">
               {/* Thumbnail */}
-              <div className="w-16 h-16 bg-primary-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg className="w-8 h-8 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-16 h-16 bg-primary-50 dark:bg-primary-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg className="w-8 h-8 text-primary-400 dark:text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
               </div>
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-surface-900 truncate">{item.title}</h3>
-                <p className="text-sm text-surface-500 mt-0.5">{formatPrice(item.unit_price)} c/u</p>
+                <h3 className="font-semibold text-surface-900 dark:text-surface-100 truncate">{item.title}</h3>
+                <p className="text-sm text-surface-500 dark:text-surface-400 mt-0.5">{formatPrice(item.unit_price)} c/u</p>
               </div>
 
               {/* Quantity controls */}
@@ -123,21 +123,21 @@ export default function Cart() {
                 <button
                   onClick={() => updateQty(item.booklet_id, item.quantity - 1)}
                   disabled={updating === item.booklet_id}
-                  className="w-8 h-8 rounded-lg bg-surface-100 hover:bg-surface-200 flex items-center justify-center text-surface-600 transition-colors disabled:opacity-50"
+                  className="w-8 h-8 rounded-lg bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600 flex items-center justify-center text-surface-600 dark:text-surface-300 transition-colors disabled:opacity-50"
                 >
                   −
                 </button>
-                <span className="w-8 text-center font-medium text-sm">{item.quantity}</span>
+                <span className="w-8 text-center font-medium text-sm text-surface-900 dark:text-surface-100">{item.quantity}</span>
                 <button
                   onClick={() => updateQty(item.booklet_id, item.quantity + 1)}
                   disabled={updating === item.booklet_id}
-                  className="w-8 h-8 rounded-lg bg-surface-100 hover:bg-surface-200 flex items-center justify-center text-surface-600 transition-colors disabled:opacity-50"
+                  className="w-8 h-8 rounded-lg bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600 flex items-center justify-center text-surface-600 dark:text-surface-300 transition-colors disabled:opacity-50"
                 >
                   +
                 </button>
                 <button
                   onClick={() => remove(item.booklet_id)}
-                  className="ml-2 w-8 h-8 rounded-lg text-surface-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors"
+                  className="ml-2 w-8 h-8 rounded-lg text-surface-400 dark:text-surface-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -147,8 +147,8 @@ export default function Cart() {
             </div>
 
             {/* Subtotal */}
-            <div className="mt-3 pt-3 border-t border-surface-100 flex justify-end">
-              <span className="text-sm font-medium text-surface-700">
+            <div className="mt-3 pt-3 border-t border-surface-100 dark:border-surface-700 flex justify-end">
+              <span className="text-sm font-medium text-surface-700 dark:text-surface-300">
                 Subtotal: {formatPrice(item.unit_price * item.quantity)}
               </span>
             </div>
@@ -159,8 +159,8 @@ export default function Cart() {
       {/* Summary */}
       <div className="card p-6 mt-6">
         <div className="flex items-center justify-between mb-6">
-          <span className="text-surface-600">Total</span>
-          <span className="text-2xl font-bold text-surface-900">{formatPrice(total)}</span>
+          <span className="text-surface-600 dark:text-surface-400">Total</span>
+          <span className="text-2xl font-bold text-surface-900 dark:text-surface-100">{formatPrice(total)}</span>
         </div>
 
         <div className="space-y-3">
@@ -180,7 +180,7 @@ export default function Cart() {
           <button
             onClick={() => handleCheckout('cash')}
             disabled={processing}
-            className="w-full flex items-center justify-center gap-3 bg-surface-100 hover:bg-surface-200 text-surface-700 font-semibold py-3 px-6 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed ring-1 ring-surface-200"
+            className="w-full flex items-center justify-center gap-3 bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600 text-surface-700 dark:text-surface-200 font-semibold py-3 px-6 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed ring-1 ring-surface-200 dark:ring-surface-600"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -189,7 +189,7 @@ export default function Cart() {
           </button>
         </div>
 
-        <p className="mt-4 text-xs text-center text-surface-400">
+        <p className="mt-4 text-xs text-center text-surface-400 dark:text-surface-500">
           {processing ? 'Procesando tu orden...' : 'Elegí tu método de pago preferido.'}
         </p>
       </div>

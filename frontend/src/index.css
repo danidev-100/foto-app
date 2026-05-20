@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary-50: #eef2ff;
   --color-primary-100: #e0e7ff;
@@ -28,10 +30,10 @@
 
 @layer base {
   * {
-    @apply border-surface-200;
+    @apply border-surface-200 dark:border-surface-700;
   }
   body {
-    @apply bg-surface-50 text-surface-900 antialiased;
+    @apply bg-surface-50 text-surface-900 dark:bg-surface-900 dark:text-surface-100 antialiased transition-colors duration-200;
   }
 }
 
@@ -40,19 +42,19 @@
     @apply inline-flex items-center justify-center rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-surface-700 shadow-sm ring-1 ring-inset ring-surface-300 hover:bg-surface-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 transition-all duration-200;
+    @apply inline-flex items-center justify-center rounded-xl bg-white dark:bg-surface-800 px-4 py-2.5 text-sm font-semibold text-surface-700 dark:text-surface-200 shadow-sm ring-1 ring-inset ring-surface-300 dark:ring-surface-600 hover:bg-surface-50 dark:hover:bg-surface-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 transition-all duration-200;
   }
   .btn-danger {
     @apply inline-flex items-center justify-center rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 transition-all duration-200;
   }
   .input-field {
-    @apply block w-full rounded-xl border-0 py-2.5 px-3.5 text-surface-900 shadow-sm ring-1 ring-inset ring-surface-300 placeholder:text-surface-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6 transition-all duration-200;
+    @apply block w-full rounded-xl border-0 py-2.5 px-3.5 text-surface-900 dark:text-surface-100 shadow-sm ring-1 ring-inset ring-surface-300 dark:ring-surface-600 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6 transition-all duration-200 bg-white dark:bg-surface-800;
   }
   .label-field {
-    @apply block text-sm font-medium leading-6 text-surface-700;
+    @apply block text-sm font-medium leading-6 text-surface-700 dark:text-surface-300;
   }
   .card {
-    @apply bg-white rounded-2xl shadow-sm ring-1 ring-surface-200/60;
+    @apply bg-white dark:bg-surface-800 rounded-2xl shadow-sm ring-1 ring-surface-200/60 dark:ring-surface-700/60;
   }
   .badge {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
