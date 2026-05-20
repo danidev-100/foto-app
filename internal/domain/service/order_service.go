@@ -444,9 +444,9 @@ func (s *OrderService) AdminUpdateOrderStatus(ctx context.Context, orderID uuid.
 	return s.orderRepo.UpdateStatus(ctx, orderID, status)
 }
 
-// AdminSearchOrderByID searches for a single order by its ID.
-func (s *OrderService) AdminSearchOrderByID(ctx context.Context, orderID uuid.UUID) (*OrderDetailResponse, string, error) {
-	order, studentName, items, err := s.orderRepo.SearchByOrderID(ctx, orderID)
+// AdminSearchOrderByID searches for a single order by its UUID prefix.
+func (s *OrderService) AdminSearchOrderByID(ctx context.Context, idPrefix string) (*OrderDetailResponse, string, error) {
+	order, studentName, items, err := s.orderRepo.SearchByOrderID(ctx, idPrefix)
 	if err != nil {
 		return nil, "", err
 	}

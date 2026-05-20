@@ -163,6 +163,22 @@ export default function Admin() {
     }
   };
 
+  const clearSearchOrder = () => {
+    setSearchOrderId('');
+    setSearchOrderResult(null);
+  };
+
+  const clearSearchStudent = () => {
+    setSearchStudentName('');
+    setSearchStudentResults([]);
+    setSearchStudentNames({});
+  };
+
+  const clearSearchBooklet = () => {
+    setSearchBookletTitle('');
+    setSearchBookletResults([]);
+  };
+
   useEffect(() => { loadData(); }, []);
   useEffect(() => { if (activeTab === 'orders') loadOrders(); }, [activeTab]);
   useEffect(() => { if (activeTab === 'users') loadStudents(); }, [activeTab]);
@@ -715,10 +731,13 @@ export default function Admin() {
           {/* Search Results: Order by ID */}
           {searchOrderResult && (
             <div className="card overflow-hidden">
-              <div className="px-5 py-3 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-800">
+              <div className="px-5 py-3 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-800 flex items-center justify-between">
                 <h4 className="font-semibold text-primary-800 dark:text-primary-300 text-sm">
                   Resultado: Pedido #{searchOrderResult.order.id.slice(0, 8)}
                 </h4>
+                <button onClick={clearSearchOrder} className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 font-medium">
+                  ✕ Limpiar
+                </button>
               </div>
               <table className="w-full text-sm">
                 <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
@@ -774,10 +793,13 @@ export default function Admin() {
           {/* Search Results: By Student Name */}
           {searchStudentResults.length > 0 && (
             <div className="card overflow-hidden">
-              <div className="px-5 py-3 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-800">
+              <div className="px-5 py-3 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-800 flex items-center justify-between">
                 <h4 className="font-semibold text-primary-800 dark:text-primary-300 text-sm">
                   Pedidos de "{searchStudentName}" ({searchStudentResults.length} encontrado{searchStudentResults.length !== 1 ? 's' : ''})
                 </h4>
+                <button onClick={clearSearchStudent} className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 font-medium">
+                  ✕ Limpiar
+                </button>
               </div>
               <table className="w-full text-sm">
                 <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
@@ -833,10 +855,13 @@ export default function Admin() {
           {/* Search Results: By Booklet Title */}
           {searchBookletResults.length > 0 && (
             <div className="card overflow-hidden">
-              <div className="px-5 py-3 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-800">
+              <div className="px-5 py-3 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-800 flex items-center justify-between">
                 <h4 className="font-semibold text-primary-800 dark:text-primary-300 text-sm">
                   Cuadernillo "{searchBookletTitle}" ({searchBookletResults.length} encontrado{searchBookletResults.length !== 1 ? 's' : ''})
                 </h4>
+                <button onClick={clearSearchBooklet} className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 font-medium">
+                  ✕ Limpiar
+                </button>
               </div>
               <table className="w-full text-sm">
                 <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">

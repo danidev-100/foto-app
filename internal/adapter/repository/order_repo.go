@@ -274,8 +274,10 @@ func (r *OrderRepo) ListAllWithStudentName(ctx context.Context, status string, p
 	return orders, studentNames, total, rows.Err()
 }
 
-// SearchByOrderID returns a single order with student name and items.
-func (r *OrderRepo) SearchByOrderID(ctx context.Context, orderID uuid.UUID) (*model.Order, string, []model.OrderItem, error) {
+// SearchByOrderID returns a single order with student name and items by UUID prefix.
+func (r *OrderRepo) SearchByOrderID(ctx context.Context, idPrefix string) (*model.Order, string, []model.OrderItem, error) {
+	pattern := idPrefix + "%"
+
 	// Get order with student name
 	var o model.Order
 	var studentName string
@@ -284,8 +286,8 @@ func (r *OrderRepo) SearchByOrderID(ctx context.Context, orderID uuid.UUID) (*mo
 		       o.mp_preference_id, o.notes, o.delivery_date, o.created_at, o.updated_at,
 		       s.name as student_name
 		FROM orders o JOIN students s ON o.student_id = s.id
-		WHERE o.id = $1
-	`, orderID).Scan(
+		WHERE o.id::text LIKE $1
+	`, pattern).Scan(
 		&o.ID, &o.StudentID, &o.Total, &o.Status, &o.PaymentMethod, &o.PaymentStatus,
 		&o.MPPreferenceID, &o.Notes, &o.DeliveryDate, &o.CreatedAt, &o.UpdatedAt,
 		&studentName,
@@ -298,7 +300,7 @@ func (r *OrderRepo) SearchByOrderID(ctx context.Context, orderID uuid.UUID) (*mo
 	}
 
 	// Get items
-	items, err := r.FindItemsByOrderID(ctx, orderID)
+	items, err := r.FindItemsByOrderID(ctx, o.ID)
 	if err != nil {
 		return nil, "", nil, err
 	}
@@ -375,11 +377,15 @@ func (r *OrderRepo) SearchByBookletTitle(ctx context.Context, title string) ([]m
 
 	var results []model.BookletOrderResult
 	for rows.Next() {
+		var studentID uuid.UUID
+		var orderID uuid.UUID
 		var r model.BookletOrderResult
-		err := rows.Scan(&r.StudentName, &r.StudentID, &r.OrderID, &r.BookletTitle, &r.Quantity, &r.OrderStatus, &r.CreatedAt)
+		err := rows.Scan(&r.StudentName, &studentID, &orderID, &r.BookletTitle, &r.Quantity, &r.OrderStatus, &r.CreatedAt)
 		if err != nil {
 			return nil, fmt.Errorf("scan booklet order result: %w", err)
 		}
+		r.StudentID = studentID.String()
+		r.OrderID = orderID.String()
 		results = append(results, r)
 	}
 

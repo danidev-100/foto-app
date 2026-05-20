@@ -92,13 +92,14 @@ func SetupRoutes(
 	adminOrders := admin.Group("/orders")
 	adminOrders.Get("/", orderHandler.ListAllOrders)
 	adminOrders.Get("/details", orderHandler.ListAllOrdersWithDetails)
-	adminOrders.Get("/:id", orderHandler.GetOrderAdmin)
-	adminOrders.Put("/:id/status", orderHandler.UpdateOrderStatus)
 
-	// Admin order search routes (auth + admin)
+	// Admin order search routes (MUST be before /:id to avoid route conflict)
 	adminOrders.Get("/search/by-id", orderHandler.SearchOrderByID)
 	adminOrders.Get("/search/by-student", orderHandler.SearchOrdersByStudentName)
 	adminOrders.Get("/search/by-booklet", orderHandler.SearchOrdersByBookletTitle)
+
+	adminOrders.Get("/:id", orderHandler.GetOrderAdmin)
+	adminOrders.Put("/:id/status", orderHandler.UpdateOrderStatus)
 
 	// --- Slice 6: Payment routes ---
 

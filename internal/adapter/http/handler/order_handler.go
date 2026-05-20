@@ -217,19 +217,14 @@ func (h *OrderHandler) UpdateOrderStatus(c *fiber.Ctx) error {
 }
 
 // SearchOrderByID handles GET /api/admin/orders/search/by-id?id=xxx.
-// Returns a single order with student name and items.
+// Returns a single order with student name and items. Accepts full UUID or prefix.
 func (h *OrderHandler) SearchOrderByID(c *fiber.Ctx) error {
 	idParam := c.Query("id")
 	if idParam == "" {
 		return response.ErrorJSON(c, fiber.StatusBadRequest, "AUTH_004", "id query parameter is required", nil)
 	}
 
-	orderID, err := uuid.Parse(idParam)
-	if err != nil {
-		return response.ErrorJSON(c, fiber.StatusBadRequest, "AUTH_004", "invalid order ID", nil)
-	}
-
-	detail, studentName, err := h.orderService.AdminSearchOrderByID(c.Context(), orderID)
+	detail, studentName, err := h.orderService.AdminSearchOrderByID(c.Context(), idParam)
 	if err != nil {
 		return response.ErrorJSON(c, fiber.StatusInternalServerError, "INF_001", "failed to search order", nil)
 	}
