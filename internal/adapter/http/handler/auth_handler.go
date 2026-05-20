@@ -29,8 +29,8 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	}
 
 	// Validation
-	if req.Name == "" || req.Email == "" || req.Password == "" || req.CourseID == "" {
-		return response.ErrorJSON(c, fiber.StatusBadRequest, "AUTH_004", "name, email, password, and course_id are required", nil)
+	if req.Name == "" || req.Email == "" || req.Password == "" {
+		return response.ErrorJSON(c, fiber.StatusBadRequest, "AUTH_004", "name, email, and password are required", nil)
 	}
 
 	student, err := h.authService.Register(c.Context(), req)

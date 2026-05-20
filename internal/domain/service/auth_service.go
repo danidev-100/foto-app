@@ -20,7 +20,7 @@ type RegisterRequest struct {
 	Email    string  `json:"email"`
 	Password string  `json:"password"`
 	Phone    *string `json:"phone,omitempty"`
-	CourseID string  `json:"course_id"`
+	CourseID *string `json:"course_id,omitempty"`
 }
 
 // LoginRequest carries the credentials for authentication.
@@ -66,10 +66,14 @@ func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*Login
 		return nil, model.ErrConflict
 	}
 
-	// Parse course_id
-	courseID, err := uuid.Parse(req.CourseID)
-	if err != nil {
-		return nil, model.ErrValidation
+	// Parse course_id (optional)
+	var courseID uuid.UUID
+	if req.CourseID != nil && *req.CourseID != "" {
+		var err error
+		courseID, err = uuid.Parse(*req.CourseID)
+		if err != nil {
+			return nil, model.ErrValidation
+		}
 	}
 
 	// Hash password with bcrypt cost 12
@@ -97,7 +101,7 @@ func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*Login
 	token, err := jwtpkg.CreateToken(
 		student.ID.String(),
 		student.Email,
-		student.CourseID.String(),
+		student.CourseID.String(), // Will be zero UUID if nil, might need adjustment in JWT pkg if strict
 		student.IsAdmin,
 		s.jwtSecret,
 		s.jwtExpiry,

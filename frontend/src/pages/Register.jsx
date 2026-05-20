@@ -1,19 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getCourses } from '../api/catalog';
 
 export default function Register() {
-  const [form, setForm] = useState({ name: '', email: '', password: '', course_id: '' });
-  const [courses, setCourses] = useState([]);
+  const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    getCourses().then(({ data }) => setCourses(data.data || [])).catch(() => {});
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -113,21 +107,6 @@ export default function Register() {
                 minLength={6}
                 autoComplete="new-password"
               />
-            </div>
-            <div>
-              <label htmlFor="course" className="label-field">Curso</label>
-              <select
-                id="course"
-                value={form.course_id}
-                onChange={(e) => setForm({ ...form, course_id: e.target.value })}
-                className="input-field mt-1.5"
-                required
-              >
-                <option value="">Seleccioná tu curso</option>
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
             </div>
             <button
               type="submit"
