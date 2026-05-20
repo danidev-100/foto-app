@@ -15,6 +15,7 @@ function getLevelFromCourse(name) {
 export default function Catalog({ onCartUpdate }) {
   const [courses, setCourses] = useState([]);
   const [allBooklets, setAllBooklets] = useState([]);
+  const [courseNameToIds, setCourseNameToIds] = useState({});
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
@@ -34,7 +35,16 @@ export default function Catalog({ onCartUpdate }) {
       const bookletsData = await bookletsRes.json();
 
       const raw = coursesData.data || [];
-      // Deduplicate by normalized name, keep first occurrence
+      // Build map: course name -> ALL IDs (handles duplicate names with different UUIDs)
+      const nameMap = {};
+      for (const c of raw) {
+        const key = c.name.trim().toLowerCase();
+        if (!nameMap[key]) nameMap[key] = new Set();
+        nameMap[key].add(c.id);
+      }
+      setCourseNameToIds(nameMap);
+
+      // Deduplicate by normalized name, keep first occurrence (for display)
       const seen = new Set();
       const unique = raw.filter(c => {
         const key = c.name.trim().toLowerCase();
@@ -53,7 +63,13 @@ export default function Catalog({ onCartUpdate }) {
   };
 
   const filteredBooklets = selectedCourse
-    ? allBooklets.filter(b => b.course_id === selectedCourse.id)
+    ? allBooklets.filter(b => {
+        if (b.course_id === selectedCourse.id) return true;
+        // Also match by course name (handles deduplication mismatch)
+        const key = selectedCourse.name.trim().toLowerCase();
+        const ids = courseNameToIds[key];
+        return ids && ids.has(b.course_id);
+      })
     : [];
 
   const showToast = (message, type = 'success') => {
