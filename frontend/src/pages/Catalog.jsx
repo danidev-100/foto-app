@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { addToCart } from '../api/cart';
 
 const LEVELS = [
@@ -15,10 +15,12 @@ function getLevelFromCourse(name) {
 export default function Catalog({ onCartUpdate }) {
   const [courses, setCourses] = useState([]);
   const [allBooklets, setAllBooklets] = useState([]);
-  const [courseNameToIds, setCourseNameToIds] = useState({});
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
+  // Refs for matching booklets to courses by name
+  const courseIdToName = useRef({});
+  const courseNameToIds = useRef({});
 
   useEffect(() => {
     loadData();
@@ -35,14 +37,17 @@ export default function Catalog({ onCartUpdate }) {
       const bookletsData = await bookletsRes.json();
 
       const raw = coursesData.data || [];
-      // Build map: course name -> ALL IDs (handles duplicate names with different UUIDs)
-      const nameMap = {};
+      // Build maps for robust matching
+      const idToName = {};
+      const nameToIds = {};
       for (const c of raw) {
         const key = c.name.trim().toLowerCase();
-        if (!nameMap[key]) nameMap[key] = new Set();
-        nameMap[key].add(c.id);
+        idToName[c.id] = key;
+        if (!nameToIds[key]) nameToIds[key] = new Set();
+        nameToIds[key].add(c.id);
       }
-      setCourseNameToIds(nameMap);
+      courseIdToName.current = idToName;
+      courseNameToIds.current = nameToIds;
 
       // Deduplicate by normalized name, keep first occurrence (for display)
       const seen = new Set();
@@ -64,11 +69,14 @@ export default function Catalog({ onCartUpdate }) {
 
   const filteredBooklets = selectedCourse
     ? allBooklets.filter(b => {
+        // Direct ID match
         if (b.course_id === selectedCourse.id) return true;
-        // Also match by course name (handles deduplication mismatch)
-        const key = selectedCourse.name.trim().toLowerCase();
-        const ids = courseNameToIds[key];
-        return ids && ids.has(b.course_id);
+        // Match by course name: find the name of the booklet's course_id,
+        // then check if it matches the selected course's name
+        const bookletCourseName = courseIdToName.current[b.course_id];
+        if (!bookletCourseName) return false;
+        const selectedKey = selectedCourse.name.trim().toLowerCase();
+        return bookletCourseName === selectedKey;
       })
     : [];
 
