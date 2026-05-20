@@ -40,26 +40,26 @@ type UpdateDivisionRequest struct {
 
 // CreateBookletRequest carries the fields needed to create a booklet.
 type CreateBookletRequest struct {
-	CourseID    string          `json:"course_id"`
-	DivisionID  string          `json:"division_id"`
-	Title       string          `json:"title"`
-	Description *string         `json:"description,omitempty"`
-	Price       decimal.Decimal `json:"price"`
-	Stock       int             `json:"stock"`
-	ImageURL    *string         `json:"image_url,omitempty"`
-	IsActive    *bool           `json:"is_active,omitempty"`
+	CourseID     string          `json:"course_id"`
+	DivisionID   string          `json:"division_id"`
+	Title        string          `json:"title"`
+	Description  *string         `json:"description,omitempty"`
+	CurrentPrice decimal.Decimal `json:"current_price"`
+	Stock        *int            `json:"stock,omitempty"`
+	ImageURL     *string         `json:"image_url,omitempty"`
+	IsActive     *bool           `json:"is_active,omitempty"`
 }
 
 // UpdateBookletRequest carries the fields to update a booklet.
 type UpdateBookletRequest struct {
-	CourseID    string          `json:"course_id"`
-	DivisionID  string          `json:"division_id"`
-	Title       string          `json:"title"`
-	Description *string         `json:"description,omitempty"`
-	Price       decimal.Decimal `json:"price"`
-	Stock       int             `json:"stock"`
-	ImageURL    *string         `json:"image_url,omitempty"`
-	IsActive    *bool           `json:"is_active,omitempty"`
+	CourseID     string          `json:"course_id"`
+	DivisionID   string          `json:"division_id"`
+	Title        string          `json:"title"`
+	Description  *string         `json:"description,omitempty"`
+	CurrentPrice decimal.Decimal `json:"current_price"`
+	Stock        *int            `json:"stock,omitempty"`
+	ImageURL     *string         `json:"image_url,omitempty"`
+	IsActive     *bool           `json:"is_active,omitempty"`
 }
 
 // ---------- CatalogService ----------
@@ -98,6 +98,12 @@ func (s *CatalogService) ListActiveBooklets(ctx context.Context, filter port.Boo
 	return s.bookletRepo.List(ctx, filter)
 }
 
+// ListAllBooklets returns all booklets including inactive, for admin view.
+func (s *CatalogService) ListAllBooklets(ctx context.Context, filter port.BookletFilter) ([]model.Booklet, int, error) {
+	filter.AdminView = true
+	return s.bookletRepo.List(ctx, filter)
+}
+
 // GetBooklet retrieves a single booklet by ID (admin view shows all).
 func (s *CatalogService) GetBooklet(ctx context.Context, id uuid.UUID) (*model.Booklet, error) {
 	return s.bookletRepo.FindByID(ctx, id)
@@ -115,6 +121,11 @@ func (s *CatalogService) ListDivisionsByCourse(ctx context.Context, courseID uui
 		return nil, err
 	}
 	return s.divisionRepo.ListByCourse(ctx, courseID)
+}
+
+// ListAllDivisions returns all divisions across all courses.
+func (s *CatalogService) ListAllDivisions(ctx context.Context) ([]model.Division, error) {
+	return s.divisionRepo.ListAll(ctx)
 }
 
 // GetCourse retrieves a single course.
@@ -218,10 +229,10 @@ func (s *CatalogService) DeleteDivision(ctx context.Context, id uuid.UUID) error
 
 // CreateBooklet creates a new booklet.
 func (s *CatalogService) CreateBooklet(ctx context.Context, req CreateBookletRequest) (*model.Booklet, error) {
-	if req.Price.IsNegative() {
+	if req.CurrentPrice.IsNegative() {
 		return nil, model.ErrNegativePrice
 	}
-	if req.Stock < 0 {
+	if req.Stock != nil && *req.Stock < 0 {
 		return nil, model.ErrNegativeStock
 	}
 
@@ -239,14 +250,19 @@ func (s *CatalogService) CreateBooklet(ctx context.Context, req CreateBookletReq
 		isActive = *req.IsActive
 	}
 
+	stock := 0
+	if req.Stock != nil {
+		stock = *req.Stock
+	}
+
 	booklet := &model.Booklet{
 		ID:           uuid.New(),
 		CourseID:     courseID,
 		DivisionID:   divisionID,
 		Title:        req.Title,
 		Description:  req.Description,
-		CurrentPrice: req.Price,
-		Stock:        req.Stock,
+		CurrentPrice: req.CurrentPrice,
+		Stock:        stock,
 		ImageURL:     req.ImageURL,
 		IsActive:     isActive,
 	}
@@ -258,11 +274,8 @@ func (s *CatalogService) CreateBooklet(ctx context.Context, req CreateBookletReq
 
 // UpdateBooklet updates an existing booklet.
 func (s *CatalogService) UpdateBooklet(ctx context.Context, id uuid.UUID, req UpdateBookletRequest) (*model.Booklet, error) {
-	if req.Price.IsNegative() {
+	if req.CurrentPrice.IsNegative() {
 		return nil, model.ErrNegativePrice
-	}
-	if req.Stock < 0 {
-		return nil, model.ErrNegativeStock
 	}
 
 	courseID, err := uuid.Parse(req.CourseID)
@@ -282,8 +295,10 @@ func (s *CatalogService) UpdateBooklet(ctx context.Context, id uuid.UUID, req Up
 	booklet.DivisionID = divisionID
 	booklet.Title = req.Title
 	booklet.Description = req.Description
-	booklet.CurrentPrice = req.Price
-	booklet.Stock = req.Stock
+	booklet.CurrentPrice = req.CurrentPrice
+	if req.Stock != nil {
+		booklet.Stock = *req.Stock
+	}
 	booklet.ImageURL = req.ImageURL
 	if req.IsActive != nil {
 		booklet.IsActive = *req.IsActive

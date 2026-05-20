@@ -55,7 +55,8 @@ func NewAuthService(studentRepo port.StudentRepository, jwtSecret string, jwtExp
 
 // Register creates a new student with a bcrypt-hashed password (cost factor 12).
 // Returns model.ErrConflict if the email is already registered.
-func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*model.Student, error) {
+// Returns a LoginResponse with JWT token on success.
+func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*LoginResponse, error) {
 	// Check for existing email
 	existing, err := s.studentRepo.FindByEmail(ctx, req.Email)
 	if err != nil && err != model.ErrNotFound {
@@ -92,7 +93,23 @@ func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*model
 		return nil, err
 	}
 
-	return student, nil
+	// Generate JWT token
+	token, err := jwtpkg.CreateToken(
+		student.ID.String(),
+		student.Email,
+		student.CourseID.String(),
+		student.IsAdmin,
+		s.jwtSecret,
+		s.jwtExpiry,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &LoginResponse{
+		Token:   token,
+		Student: student,
+	}, nil
 }
 
 // Login authenticates a student by email and password.

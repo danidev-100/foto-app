@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -117,6 +118,15 @@ func (h *CatalogHandler) GetBooklet(c *fiber.Ctx) error {
 
 // ==================== Admin: Courses ====================
 
+// ListCoursesAdmin handles GET /api/admin/courses.
+func (h *CatalogHandler) ListCoursesAdmin(c *fiber.Ctx) error {
+	courses, err := h.catalogService.ListCourses(c.Context())
+	if err != nil {
+		return response.ErrorJSON(c, fiber.StatusInternalServerError, "INF_001", "failed to list courses", nil)
+	}
+	return response.SuccessJSON(c, fiber.StatusOK, courses)
+}
+
 // CreateCourse handles POST /api/admin/courses.
 func (h *CatalogHandler) CreateCourse(c *fiber.Ctx) error {
 	var req service.CreateCourseRequest
@@ -176,6 +186,15 @@ func (h *CatalogHandler) DeleteCourse(c *fiber.Ctx) error {
 }
 
 // ==================== Admin: Divisions ====================
+
+// ListDivisionsAdmin handles GET /api/admin/divisions.
+func (h *CatalogHandler) ListDivisionsAdmin(c *fiber.Ctx) error {
+	divisions, err := h.catalogService.ListAllDivisions(c.Context())
+	if err != nil {
+		return response.ErrorJSON(c, fiber.StatusInternalServerError, "INF_001", "failed to list divisions", nil)
+	}
+	return response.SuccessJSON(c, fiber.StatusOK, divisions)
+}
 
 // CreateDivision handles POST /api/admin/divisions.
 func (h *CatalogHandler) CreateDivision(c *fiber.Ctx) error {
@@ -246,6 +265,33 @@ func (h *CatalogHandler) DeleteDivision(c *fiber.Ctx) error {
 
 // ==================== Admin: Booklets ====================
 
+// ListBookletsAdmin handles GET /api/admin/booklets.
+func (h *CatalogHandler) ListBookletsAdmin(c *fiber.Ctx) error {
+	var filter port.BookletFilter
+
+	if courseIDStr := c.Query("course_id"); courseIDStr != "" {
+		courseID, err := uuid.Parse(courseIDStr)
+		if err != nil {
+			return response.ErrorJSON(c, fiber.StatusBadRequest, "AUTH_004", "invalid course_id", nil)
+		}
+		filter.CourseID = &courseID
+	}
+	if divisionIDStr := c.Query("division_id"); divisionIDStr != "" {
+		divisionID, err := uuid.Parse(divisionIDStr)
+		if err != nil {
+			return response.ErrorJSON(c, fiber.StatusBadRequest, "AUTH_004", "invalid division_id", nil)
+		}
+		filter.DivisionID = &divisionID
+	}
+
+	booklets, total, err := h.catalogService.ListAllBooklets(c.Context(), filter)
+	if err != nil {
+		return response.ErrorJSON(c, fiber.StatusInternalServerError, "INF_001", "failed to list booklets", nil)
+	}
+
+	return response.PaginatedJSON(c, booklets, filter.Page, filter.Limit, total)
+}
+
 // CreateBooklet handles POST /api/admin/booklets.
 func (h *CatalogHandler) CreateBooklet(c *fiber.Ctx) error {
 	var req service.CreateBookletRequest
@@ -267,6 +313,7 @@ func (h *CatalogHandler) CreateBooklet(c *fiber.Ctx) error {
 		if err == model.ErrValidation {
 			return response.ErrorJSON(c, fiber.StatusBadRequest, "AUTH_004", "invalid UUID format for course_id or division_id", nil)
 		}
+		log.Printf("CreateBooklet error: %v", err)
 		return response.ErrorJSON(c, fiber.StatusInternalServerError, "INF_001", "failed to create booklet", nil)
 	}
 	return response.SuccessJSON(c, fiber.StatusCreated, booklet)

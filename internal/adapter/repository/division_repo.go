@@ -54,6 +54,30 @@ func (r *DivisionRepo) ListByCourse(ctx context.Context, courseID uuid.UUID) ([]
 	return divisions, rows.Err()
 }
 
+// ListAll returns all divisions ordered by course_id and name.
+func (r *DivisionRepo) ListAll(ctx context.Context) ([]model.Division, error) {
+	query := `SELECT id, course_id, name, is_active, created_at, updated_at
+	           FROM divisions ORDER BY course_id, name`
+	rows, err := r.pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("list all divisions: %w", err)
+	}
+	defer rows.Close()
+
+	var divisions []model.Division
+	for rows.Next() {
+		var d model.Division
+		if err := rows.Scan(&d.ID, &d.CourseID, &d.Name, &d.IsActive, &d.CreatedAt, &d.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("scan division: %w", err)
+		}
+		divisions = append(divisions, d)
+	}
+	if divisions == nil {
+		divisions = []model.Division{}
+	}
+	return divisions, rows.Err()
+}
+
 // Create inserts a new division row.
 func (r *DivisionRepo) Create(ctx context.Context, d *model.Division) error {
 	query := `INSERT INTO divisions (id, course_id, name, is_active)
