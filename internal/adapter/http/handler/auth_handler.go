@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"log"
+
 	"github.com/gofiber/fiber/v2"
 
 	"foto-app/internal/domain/model"
@@ -38,6 +40,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		if err == model.ErrConflict {
 			return response.ErrorJSON(c, fiber.StatusConflict, "AUTH_003", "email already registered", nil)
 		}
+		log.Printf("Register error: %v", err)
 		return response.ErrorJSON(c, fiber.StatusInternalServerError, "INF_001", "internal server error", nil)
 	}
 

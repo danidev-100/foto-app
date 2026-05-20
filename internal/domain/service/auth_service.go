@@ -67,13 +67,13 @@ func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*Login
 	}
 
 	// Parse course_id (optional)
-	var courseID uuid.UUID
+	var courseID *uuid.UUID
 	if req.CourseID != nil && *req.CourseID != "" {
-		var err error
-		courseID, err = uuid.Parse(*req.CourseID)
+		parsed, err := uuid.Parse(*req.CourseID)
 		if err != nil {
 			return nil, model.ErrValidation
 		}
+		courseID = &parsed
 	}
 
 	// Hash password with bcrypt cost 12
@@ -98,10 +98,14 @@ func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*Login
 	}
 
 	// Generate JWT token
+	var courseIDStr string
+	if student.CourseID != nil {
+		courseIDStr = student.CourseID.String()
+	}
 	token, err := jwtpkg.CreateToken(
 		student.ID.String(),
 		student.Email,
-		student.CourseID.String(), // Will be zero UUID if nil, might need adjustment in JWT pkg if strict
+		courseIDStr,
 		student.IsAdmin,
 		s.jwtSecret,
 		s.jwtExpiry,
@@ -133,10 +137,14 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginRespon
 	}
 
 	// Generate JWT
+	var courseIDStr string
+	if student.CourseID != nil {
+		courseIDStr = student.CourseID.String()
+	}
 	token, err := jwtpkg.CreateToken(
 		student.ID.String(),
 		student.Email,
-		student.CourseID.String(),
+		courseIDStr,
 		student.IsAdmin,
 		s.jwtSecret,
 		s.jwtExpiry,

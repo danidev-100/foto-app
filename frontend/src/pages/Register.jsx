@@ -20,6 +20,7 @@ export default function Register() {
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Error al registrarse');
+      setForm({ name: '', email: '', password: '' });
     } finally {
       setLoading(false);
     }
