@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { getCart, updateCartItem, removeFromCart, clearCart } from '../api/cart';
-import { placeOrder } from '../api/orders';
+import { placeOrder, initiatePayment } from '../api/orders';
 import { useNavigate } from 'react-router-dom';
 
 export default function Cart() {
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
+  const [processing, setProcessing] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -32,8 +33,27 @@ export default function Cart() {
   };
 
   const handleCheckout = async () => {
-    await placeOrder();
-    navigate('/orders');
+    setProcessing(true);
+    try {
+      // 1. Create order with Mercado Pago method
+      const orderRes = await placeOrder({ payment_method: 'mercadopago' });
+      const orderId = orderRes.data.data.id;
+
+      // 2. Initiate payment to get MP redirect URL
+      const payRes = await initiatePayment(orderId, 'mercadopago');
+      const paymentUrl = payRes.data.data.payment_url;
+
+      // 3. Redirect to Mercado Pago
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
+      } else {
+        navigate('/orders');
+      }
+    } catch (error) {
+      console.error('Checkout failed:', error);
+      setProcessing(false);
+      // Optionally show error toast
+    }
   };
 
   const formatPrice = (cents) => `$${(cents / 100).toLocaleString('es-AR')}`;
@@ -138,11 +158,15 @@ export default function Cart() {
           <span className="text-surface-600">Total</span>
           <span className="text-2xl font-bold text-surface-900">{formatPrice(total)}</span>
         </div>
-        <button onClick={handleCheckout} className="btn-primary w-full text-base py-3">
-          Encargar cuadernillos
+        <button
+          onClick={handleCheckout}
+          disabled={processing}
+          className="btn-primary w-full text-base py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {processing ? 'Procesando...' : 'Comprar cuadernillo'}
         </button>
         <p className="mt-3 text-xs text-center text-surface-400">
-          Podés pagar con Mercado Pago o en efectivo al retirar.
+          Serás redirigido a Mercado Pago para completar el pago.
         </p>
       </div>
     </div>
