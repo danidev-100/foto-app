@@ -59,6 +59,36 @@ func (r *OrderRepo) FindByID(ctx context.Context, id uuid.UUID) (*model.Order, e
 	return scanOrder(row)
 }
 
+// FindItemsByOrderIDs returns all items for the given order IDs.
+// Returns a map of orderID -> []OrderItem for efficient batch loading.
+func (r *OrderRepo) FindItemsByOrderIDs(ctx context.Context, orderIDs []uuid.UUID) (map[uuid.UUID][]model.OrderItem, error) {
+	if len(orderIDs) == 0 {
+		return map[uuid.UUID][]model.OrderItem{}, nil
+	}
+
+	query := `SELECT id, order_id, booklet_id, title, quantity, unit_price, delivery_days, created_at
+	           FROM order_items WHERE order_id = ANY($1) ORDER BY order_id, created_at`
+	rows, err := r.pool.Query(ctx, query, orderIDs)
+	if err != nil {
+		return nil, fmt.Errorf("query order_items batch: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[uuid.UUID][]model.OrderItem)
+	for rows.Next() {
+		var item model.OrderItem
+		err := rows.Scan(
+			&item.ID, &item.OrderID, &item.BookletID, &item.Title,
+			&item.Quantity, &item.UnitPrice, &item.DeliveryDays, &item.CreatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scan order_item: %w", err)
+		}
+		result[item.OrderID] = append(result[item.OrderID], item)
+	}
+	return result, rows.Err()
+}
+
 // FindItemsByOrderID returns all items for a given order.
 func (r *OrderRepo) FindItemsByOrderID(ctx context.Context, orderID uuid.UUID) ([]model.OrderItem, error) {
 	query := `SELECT id, order_id, booklet_id, title, quantity, unit_price, delivery_days, created_at

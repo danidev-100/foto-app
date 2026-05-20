@@ -22,7 +22,14 @@ export default function Orders() {
   const [actionLoading, setActionLoading] = useState(null);
 
   useEffect(() => {
-    getOrders().then(({ data }) => setOrders(data.data || [])).finally(() => setLoading(false));
+    getOrders().then(({ data }) => {
+      // Backend returns { order, items } structure, flatten to include items in order
+      const orders = (data.data || []).map(d => ({
+        ...d.order,
+        items: d.items || []
+      }));
+      setOrders(orders);
+    }).finally(() => setLoading(false));
   }, []);
 
   const handleCancel = async (id) => {
@@ -91,8 +98,8 @@ export default function Orders() {
                 {/* Header */}
                 <div className="px-5 py-4 border-b border-surface-100 flex items-center justify-between">
                   <div>
-                    <span className="text-sm text-surface-500">Pedido #{order.id.slice(0, 8)}</span>
-                    <p className="text-xs text-surface-400 mt-0.5">{formatDate(order.created_at)}</p>
+                    <span className="text-sm font-medium text-surface-900">Pedido #{order.id.slice(0, 8)}</span>
+                    <p className="text-xs text-surface-500 mt-0.5">{formatDate(order.created_at)}</p>
                   </div>
                   <span className={status.className}>{status.label}</span>
                 </div>
@@ -116,7 +123,7 @@ export default function Orders() {
 
                 {/* Footer */}
                 <div className="px-5 py-4 bg-surface-50 flex items-center justify-between">
-                  <span className="text-lg font-bold text-surface-900">{formatPrice(order.total_cents)}</span>
+                  <span className="text-lg font-bold text-surface-900">{formatPrice(order.total)}</span>
                   {isCancellable && (
                     <div className="flex gap-2">
                       <button

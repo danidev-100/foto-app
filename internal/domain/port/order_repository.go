@@ -25,6 +25,10 @@ type OrderRepository interface {
 	// FindItemsByOrderID returns all items for a given order, ordered by created_at.
 	FindItemsByOrderID(ctx context.Context, orderID uuid.UUID) ([]model.OrderItem, error)
 
+	// FindItemsByOrderIDs returns all items for the given order IDs.
+	// Returns a map of orderID -> []OrderItem for efficient batch loading.
+	FindItemsByOrderIDs(ctx context.Context, orderIDs []uuid.UUID) (map[uuid.UUID][]model.OrderItem, error)
+
 	// ListByStudent returns paginated orders for a specific student, newest first.
 	// Returns (orders, totalCount, error).
 	ListByStudent(ctx context.Context, studentID uuid.UUID, page, limit int) ([]model.Order, int, error)

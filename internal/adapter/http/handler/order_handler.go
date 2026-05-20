@@ -64,7 +64,7 @@ func (h *OrderHandler) PlaceOrder(c *fiber.Ctx) error {
 }
 
 // ListOrders handles GET /api/orders.
-// Returns the authenticated student's orders, paginated (newest first).
+// Returns the authenticated student's orders with items, paginated (newest first).
 func (h *OrderHandler) ListOrders(c *fiber.Ctx) error {
 	studentID := getStudentID(c)
 	if studentID == uuid.Nil {

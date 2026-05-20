@@ -234,15 +234,45 @@ func (s *OrderService) PlaceOrder(ctx context.Context, studentID uuid.UUID, req 
 	return order, nil
 }
 
-// ListOrders returns the student's orders with pagination.
-func (s *OrderService) ListOrders(ctx context.Context, studentID uuid.UUID, page, limit int) ([]model.Order, int, error) {
+// ListOrders returns the student's orders with their items, paginated.
+func (s *OrderService) ListOrders(ctx context.Context, studentID uuid.UUID, page, limit int) ([]OrderDetailResponse, int, error) {
 	if page < 1 {
 		page = 1
 	}
 	if limit < 1 || limit > 50 {
 		limit = 10
 	}
-	return s.orderRepo.ListByStudent(ctx, studentID, page, limit)
+
+	orders, total, err := s.orderRepo.ListByStudent(ctx, studentID, page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if len(orders) == 0 {
+		return []OrderDetailResponse{}, 0, nil
+	}
+
+	// Batch load items for all orders
+	orderIDs := make([]uuid.UUID, len(orders))
+	for i, o := range orders {
+		orderIDs[i] = o.ID
+	}
+
+	itemsMap, err := s.orderRepo.FindItemsByOrderIDs(ctx, orderIDs)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Combine orders with their items
+	result := make([]OrderDetailResponse, len(orders))
+	for i, o := range orders {
+		result[i] = OrderDetailResponse{
+			Order: &o,
+			Items: itemsMap[o.ID],
+		}
+	}
+
+	return result, total, nil
 }
 
 // GetOrder returns a single order with its items, scoped to the student.

@@ -32,27 +32,31 @@ export default function Cart() {
     setCart(data.data);
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (method) => {
     setProcessing(true);
     try {
-      // 1. Create order with Mercado Pago method
-      const orderRes = await placeOrder({ payment_method: 'mercadopago' });
+      // 1. Create order with selected payment method
+      const orderRes = await placeOrder({ payment_method: method });
       const orderId = orderRes.data.data.id;
 
-      // 2. Initiate payment to get MP redirect URL
-      const payRes = await initiatePayment(orderId, 'mercadopago');
-      const paymentUrl = payRes.data.data.payment_url;
+      if (method === 'mercadopago') {
+        // 2. Initiate payment to get MP redirect URL
+        const payRes = await initiatePayment(orderId, 'mercadopago');
+        const paymentUrl = payRes.data.data.payment_url;
 
-      // 3. Redirect to Mercado Pago
-      if (paymentUrl) {
-        window.location.href = paymentUrl;
+        // 3. Redirect to Mercado Pago
+        if (paymentUrl) {
+          window.location.href = paymentUrl;
+        } else {
+          navigate('/orders');
+        }
       } else {
+        // Cash payment - order created, redirect to orders
         navigate('/orders');
       }
     } catch (error) {
       console.error('Checkout failed:', error);
       setProcessing(false);
-      // Optionally show error toast
     }
   };
 
@@ -154,19 +158,39 @@ export default function Cart() {
 
       {/* Summary */}
       <div className="card p-6 mt-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-6">
           <span className="text-surface-600">Total</span>
           <span className="text-2xl font-bold text-surface-900">{formatPrice(total)}</span>
         </div>
-        <button
-          onClick={handleCheckout}
-          disabled={processing}
-          className="btn-primary w-full text-base py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {processing ? 'Procesando...' : 'Comprar cuadernillo'}
-        </button>
-        <p className="mt-3 text-xs text-center text-surface-400">
-          Serás redirigido a Mercado Pago para completar el pago.
+
+        <div className="space-y-3">
+          {/* Mercado Pago Button */}
+          <button
+            onClick={() => handleCheckout('mercadopago')}
+            disabled={processing}
+            className="w-full flex items-center justify-center gap-3 bg-[#009EE3] hover:bg-[#0088C2] text-white font-semibold py-3 px-6 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6zm4 4h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+            Pagar con Mercado Pago
+          </button>
+
+          {/* Cash Button */}
+          <button
+            onClick={() => handleCheckout('cash')}
+            disabled={processing}
+            className="w-full flex items-center justify-center gap-3 bg-surface-100 hover:bg-surface-200 text-surface-700 font-semibold py-3 px-6 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed ring-1 ring-surface-200"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            Pagar en efectivo
+          </button>
+        </div>
+
+        <p className="mt-4 text-xs text-center text-surface-400">
+          {processing ? 'Procesando tu orden...' : 'Elegí tu método de pago preferido.'}
         </p>
       </div>
     </div>
