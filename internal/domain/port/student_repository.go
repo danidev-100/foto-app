@@ -18,4 +18,10 @@ type StudentRepository interface {
 
 	// FindByID looks up a student by primary key. Returns model.ErrNotFound if not found.
 	FindByID(ctx context.Context, id uuid.UUID) (*model.Student, error)
+
+	// FindAll returns a paginated list of students and the total count.
+	FindAll(ctx context.Context, page, limit int) ([]*model.Student, int, error)
+
+	// Update persists changes to an existing student.
+	Update(ctx context.Context, s *model.Student) error
 }

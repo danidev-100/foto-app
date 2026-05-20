@@ -20,6 +20,7 @@ func SetupRoutes(
 	cartHandler *handler.CartHandler,
 	orderHandler *handler.OrderHandler,
 	paymentHandler *handler.PaymentHandler,
+	userHandler *handler.UserHandler,
 	jwtSecret string,
 ) {
 	// --- Global middleware stack (applied to all routes) ---
@@ -94,6 +95,11 @@ func SetupRoutes(
 	adminOrders.Get("/:id", orderHandler.GetOrderAdmin)
 	adminOrders.Put("/:id/status", orderHandler.UpdateOrderStatus)
 
+	// Admin order search routes (auth + admin)
+	adminOrders.Get("/search/by-id", orderHandler.SearchOrderByID)
+	adminOrders.Get("/search/by-student", orderHandler.SearchOrdersByStudentName)
+	adminOrders.Get("/search/by-booklet", orderHandler.SearchOrdersByBookletTitle)
+
 	// --- Slice 6: Payment routes ---
 
 	// Student-facing: initiate payment for an order
@@ -105,4 +111,8 @@ func SetupRoutes(
 
 	// Admin: confirm cash payment
 	admin.Post("/orders/:id/pay-cash", paymentHandler.ConfirmCashPayment)
+
+	// --- User management routes (auth + admin) ---
+	admin.Get("/students", userHandler.ListStudents)
+	admin.Patch("/students/:id", userHandler.UpdateStudent)
 }

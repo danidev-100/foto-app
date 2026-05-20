@@ -3,7 +3,9 @@ import {
   adminGetCourses, adminGetDivisions,
   adminGetBooklets, adminCreateBooklet, adminUpdateBooklet, adminDeleteBooklet,
   adminGetOrders,
+  adminSearchOrderByID, adminSearchOrdersByStudentName, adminSearchOrdersByBookletTitle,
 } from '../api/admin';
+import { listStudents, updateStudent } from '../api/students';
 import api from '../api/client';
 
 // Structured course data: level -> grades -> divisions
@@ -47,6 +49,22 @@ export default function Admin() {
   const [studentNames, setStudentNames] = useState({});
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
+
+  // Order search state
+  const [searchOrderId, setSearchOrderId] = useState('');
+  const [searchOrderResult, setSearchOrderResult] = useState(null);
+  const [searchStudentName, setSearchStudentName] = useState('');
+  const [searchStudentResults, setSearchStudentResults] = useState([]);
+  const [searchStudentNames, setSearchStudentNames] = useState({});
+  const [searchBookletTitle, setSearchBookletTitle] = useState('');
+  const [searchBookletResults, setSearchBookletResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  // Users tab state
+  const [students, setStudents] = useState([]);
+  const [studentsPage, setStudentsPage] = useState(1);
+  const [studentsTotal, setStudentsTotal] = useState(0);
+  const [studentsLoading, setStudentsLoading] = useState(false);
 
   // Structured selector state
   const [selLevel, setSelLevel] = useState('');
@@ -99,8 +117,89 @@ export default function Admin() {
     }
   };
 
+  // Order search handlers
+  const handleSearchOrderId = async () => {
+    if (!searchOrderId.trim()) return;
+    setSearchLoading(true);
+    setSearchOrderResult(null);
+    try {
+      const res = await adminSearchOrderByID(searchOrderId.trim());
+      setSearchOrderResult(res.data.data);
+    } catch {
+      showToast('Pedido no encontrado', 'error');
+      setSearchOrderResult(null);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleSearchStudentName = async () => {
+    if (!searchStudentName.trim()) return;
+    setSearchLoading(true);
+    setSearchStudentResults([]);
+    try {
+      const res = await adminSearchOrdersByStudentName(searchStudentName.trim());
+      const data = res.data.data || {};
+      setSearchStudentResults(data.orders || []);
+      setSearchStudentNames(data.student_names || {});
+    } catch {
+      showToast('Error al buscar', 'error');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleSearchBookletTitle = async () => {
+    if (!searchBookletTitle.trim()) return;
+    setSearchLoading(true);
+    setSearchBookletResults([]);
+    try {
+      const res = await adminSearchOrdersByBookletTitle(searchBookletTitle.trim());
+      setSearchBookletResults(res.data.data || []);
+    } catch {
+      showToast('Error al buscar', 'error');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
   useEffect(() => { loadData(); }, []);
   useEffect(() => { if (activeTab === 'orders') loadOrders(); }, [activeTab]);
+  useEffect(() => { if (activeTab === 'users') loadStudents(); }, [activeTab]);
+
+  const loadStudents = async (page = studentsPage) => {
+    setStudentsLoading(true);
+    try {
+      const res = await listStudents(page, 20);
+      setStudents(res.data.data || []);
+      setStudentsTotal(res.data.pagination?.total || 0);
+      setStudentsPage(page);
+    } catch {
+      showToast('Error al cargar usuarios', 'error');
+    } finally {
+      setStudentsLoading(false);
+    }
+  };
+
+  const toggleStudentRole = async (student) => {
+    try {
+      await updateStudent(student.id, { is_admin: !student.is_admin });
+      showToast(`Rol de ${student.name} actualizado`);
+      loadStudents(studentsPage);
+    } catch {
+      showToast('Error al actualizar rol', 'error');
+    }
+  };
+
+  const toggleStudentStatus = async (student) => {
+    try {
+      await updateStudent(student.id, { is_active: !student.is_active });
+      showToast(`Estado de ${student.name} actualizado`);
+      loadStudents(studentsPage);
+    } catch {
+      showToast('Error al actualizar estado', 'error');
+    }
+  };
 
   // When level/grade change, reset division selection
   useEffect(() => {
@@ -314,6 +413,16 @@ export default function Admin() {
               {orders.length}
             </span>
           )}
+        </button>
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === 'users'
+              ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-300 dark:ring-primary-700'
+              : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700'
+          }`}
+        >
+          Usuarios
         </button>
       </div>
 
@@ -544,8 +653,236 @@ export default function Admin() {
 
       {/* Orders Tab */}
       {activeTab === 'orders' && (
-        <div className="card overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="space-y-6">
+          {/* Search Section */}
+          <div className="card p-5">
+            <h3 className="font-semibold text-surface-900 dark:text-surface-100 mb-4">Buscar Pedidos</h3>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {/* Search by Order ID */}
+              <div>
+                <label className="label-field">N° de Pedido</label>
+                <div className="flex gap-2 mt-1.5">
+                  <input
+                    type="text"
+                    value={searchOrderId}
+                    onChange={(e) => setSearchOrderId(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchOrderId()}
+                    className="input-field flex-1"
+                    placeholder="UUID o primeros 8 caracteres"
+                  />
+                  <button onClick={handleSearchOrderId} className="btn-primary text-sm px-3" disabled={searchLoading}>
+                    Buscar
+                  </button>
+                </div>
+              </div>
+              {/* Search by Student Name */}
+              <div>
+                <label className="label-field">Nombre del Estudiante</label>
+                <div className="flex gap-2 mt-1.5">
+                  <input
+                    type="text"
+                    value={searchStudentName}
+                    onChange={(e) => setSearchStudentName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchStudentName()}
+                    className="input-field flex-1"
+                    placeholder="Nombre completo o parcial"
+                  />
+                  <button onClick={handleSearchStudentName} className="btn-primary text-sm px-3" disabled={searchLoading}>
+                    Buscar
+                  </button>
+                </div>
+              </div>
+              {/* Search by Booklet Title */}
+              <div>
+                <label className="label-field">Cuadernillo</label>
+                <div className="flex gap-2 mt-1.5">
+                  <input
+                    type="text"
+                    value={searchBookletTitle}
+                    onChange={(e) => setSearchBookletTitle(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchBookletTitle()}
+                    className="input-field flex-1"
+                    placeholder="Título del cuadernillo"
+                  />
+                  <button onClick={handleSearchBookletTitle} className="btn-primary text-sm px-3" disabled={searchLoading}>
+                    Buscar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Search Results: Order by ID */}
+          {searchOrderResult && (
+            <div className="card overflow-hidden">
+              <div className="px-5 py-3 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-800">
+                <h4 className="font-semibold text-primary-800 dark:text-primary-300 text-sm">
+                  Resultado: Pedido #{searchOrderResult.order.id.slice(0, 8)}
+                </h4>
+              </div>
+              <table className="w-full text-sm">
+                <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
+                  <tr>
+                    <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Pedido</th>
+                    <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Usuario</th>
+                    <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Cuadernillos</th>
+                    <th className="text-right px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Total</th>
+                    <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Estado</th>
+                    <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Pago</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
+                  <tr className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
+                    <td className="px-5 py-3">
+                      <span className="font-medium text-surface-900 dark:text-surface-100">#{searchOrderResult.order.id.slice(0, 8)}</span>
+                      <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
+                        {new Date(searchOrderResult.order.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                    </td>
+                    <td className="px-5 py-3 text-surface-700 dark:text-surface-300">{searchOrderResult.student_name}</td>
+                    <td className="px-5 py-3">
+                      <div className="space-y-1">
+                        {(searchOrderResult.items || []).map((item) => (
+                          <div key={item.id} className="flex items-center gap-2 text-surface-600 dark:text-surface-400">
+                            <span className="text-xs bg-surface-100 dark:bg-surface-700 px-1.5 py-0.5 rounded">{item.quantity}x</span>
+                            <span className="text-sm">{item.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-right font-bold text-surface-900 dark:text-surface-100">{formatPrice(searchOrderResult.order.total)}</td>
+                    <td className="px-5 py-3">
+                      <span className={`badge ${
+                        searchOrderResult.order.status === 'pending' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800' :
+                        searchOrderResult.order.status === 'confirmed' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800' :
+                        searchOrderResult.order.status === 'delivered' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' :
+                        'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'
+                      }`}>{searchOrderResult.order.status}</span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className={`badge ${
+                        searchOrderResult.order.payment_method === 'cash' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' :
+                        'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800'
+                      }`}>{searchOrderResult.order.payment_method === 'cash' ? 'Efectivo' : 'Mercado Pago'}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Search Results: By Student Name */}
+          {searchStudentResults.length > 0 && (
+            <div className="card overflow-hidden">
+              <div className="px-5 py-3 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-800">
+                <h4 className="font-semibold text-primary-800 dark:text-primary-300 text-sm">
+                  Pedidos de "{searchStudentName}" ({searchStudentResults.length} encontrado{searchStudentResults.length !== 1 ? 's' : ''})
+                </h4>
+              </div>
+              <table className="w-full text-sm">
+                <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
+                  <tr>
+                    <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Pedido</th>
+                    <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Usuario</th>
+                    <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Cuadernillos</th>
+                    <th className="text-right px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Total</th>
+                    <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Estado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
+                  {searchStudentResults.map((orderData) => {
+                    const order = orderData.order;
+                    const items = orderData.items || [];
+                    const name = searchStudentNames[order.student_id] || '—';
+                    return (
+                      <tr key={order.id} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
+                        <td className="px-5 py-3">
+                          <span className="font-medium text-surface-900 dark:text-surface-100">#{order.id.slice(0, 8)}</span>
+                          <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
+                            {new Date(order.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
+                        </td>
+                        <td className="px-5 py-3 text-surface-700 dark:text-surface-300">{name}</td>
+                        <td className="px-5 py-3">
+                          <div className="space-y-1">
+                            {items.map((item) => (
+                              <div key={item.id} className="flex items-center gap-2 text-surface-600 dark:text-surface-400">
+                                <span className="text-xs bg-surface-100 dark:bg-surface-700 px-1.5 py-0.5 rounded">{item.quantity}x</span>
+                                <span className="text-sm">{item.title}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 text-right font-bold text-surface-900 dark:text-surface-100">{formatPrice(order.total)}</td>
+                        <td className="px-5 py-3">
+                          <span className={`badge ${
+                            order.status === 'pending' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800' :
+                            order.status === 'confirmed' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800' :
+                            order.status === 'delivered' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' :
+                            'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'
+                          }`}>{order.status}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Search Results: By Booklet Title */}
+          {searchBookletResults.length > 0 && (
+            <div className="card overflow-hidden">
+              <div className="px-5 py-3 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-800">
+                <h4 className="font-semibold text-primary-800 dark:text-primary-300 text-sm">
+                  Cuadernillo "{searchBookletTitle}" ({searchBookletResults.length} encontrado{searchBookletResults.length !== 1 ? 's' : ''})
+                </h4>
+              </div>
+              <table className="w-full text-sm">
+                <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
+                  <tr>
+                    <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Estudiante</th>
+                    <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Pedido</th>
+                    <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Cuadernillo</th>
+                    <th className="text-right px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Cantidad</th>
+                    <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Estado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
+                  {searchBookletResults.map((result, idx) => (
+                    <tr key={idx} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
+                      <td className="px-5 py-3 font-medium text-surface-900 dark:text-surface-100">{result.student_name}</td>
+                      <td className="px-5 py-3">
+                        <span className="font-medium text-surface-900 dark:text-surface-100">#{result.order_id.slice(0, 8)}</span>
+                        <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
+                          {new Date(result.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                      </td>
+                      <td className="px-5 py-3 text-surface-700 dark:text-surface-300">{result.booklet_title}</td>
+                      <td className="px-5 py-3 text-right">
+                        <span className="text-lg font-bold text-primary-600 dark:text-primary-400">{result.quantity}x</span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className={`badge ${
+                          result.order_status === 'pending' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800' :
+                          result.order_status === 'confirmed' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800' :
+                          result.order_status === 'delivered' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' :
+                          'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'
+                        }`}>{result.order_status}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* All Pending Orders Table */}
+          <div className="card overflow-hidden">
+            <div className="px-5 py-3 bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
+              <h4 className="font-semibold text-surface-900 dark:text-surface-100 text-sm">Todos los Pedidos Pendientes</h4>
+            </div>
+            <table className="w-full text-sm">
             <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
               <tr>
                 <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Pedido</th>
@@ -590,6 +927,97 @@ export default function Admin() {
           </table>
           {orders.length === 0 && (
             <div className="text-center py-8 text-surface-500 dark:text-surface-400">No hay pedidos pendientes.</div>
+          )}
+        </div>
+      </div>
+      )}
+
+      {/* Users Tab */}
+      {activeTab === 'users' && (
+        <div className="space-y-4">
+          {studentsLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+            </div>
+          ) : (
+            <>
+              <div className="card overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
+                    <tr>
+                      <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Nombre</th>
+                      <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Email</th>
+                      <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Rol</th>
+                      <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Estado</th>
+                      <th className="text-right px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
+                    {students.map((s) => (
+                      <tr key={s.id} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
+                        <td className="px-5 py-3 font-medium text-surface-900 dark:text-surface-100">{s.name}</td>
+                        <td className="px-5 py-3 text-surface-500 dark:text-surface-400">{s.email}</td>
+                        <td className="px-5 py-3">
+                          <span className={`badge ${s.is_admin ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 ring-1 ring-purple-200 dark:ring-purple-800' : 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'}`}>
+                            {s.is_admin ? 'Admin' : 'Estudiante'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3">
+                          <span className={`badge ${s.is_active ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800'}`}>
+                            {s.is_active ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <button
+                            onClick={() => toggleStudentRole(s)}
+                            className="btn-secondary text-xs mr-2"
+                          >
+                            {s.is_admin ? 'Quitar admin' : 'Hacer admin'}
+                          </button>
+                          <button
+                            onClick={() => toggleStudentStatus(s)}
+                            className="btn-secondary text-xs"
+                          >
+                            {s.is_active ? 'Desactivar' : 'Activar'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {students.length === 0 && (
+                  <div className="text-center py-8 text-surface-500 dark:text-surface-400">No hay usuarios registrados.</div>
+                )}
+              </div>
+
+              {/* Pagination */}
+              {studentsTotal > 20 && (
+                <div className="flex items-center justify-between px-2">
+                  <span className="text-sm text-surface-500 dark:text-surface-400">
+                    {studentsTotal} usuarios
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => loadStudents(studentsPage - 1)}
+                      disabled={studentsPage === 1}
+                      className="btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Anterior
+                    </button>
+                    <span className="px-3 py-2 text-sm text-surface-600 dark:text-surface-400">
+                      Página {studentsPage}
+                    </span>
+                    <button
+                      onClick={() => loadStudents(studentsPage + 1)}
+                      disabled={studentsPage * 20 >= studentsTotal}
+                      className="btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

@@ -216,4 +216,71 @@ func (h *OrderHandler) UpdateOrderStatus(c *fiber.Ctx) error {
 	return response.SuccessJSON(c, fiber.StatusOK, map[string]string{"message": "order status updated"})
 }
 
+// SearchOrderByID handles GET /api/admin/orders/search/by-id?id=xxx.
+// Returns a single order with student name and items.
+func (h *OrderHandler) SearchOrderByID(c *fiber.Ctx) error {
+	idParam := c.Query("id")
+	if idParam == "" {
+		return response.ErrorJSON(c, fiber.StatusBadRequest, "AUTH_004", "id query parameter is required", nil)
+	}
+
+	orderID, err := uuid.Parse(idParam)
+	if err != nil {
+		return response.ErrorJSON(c, fiber.StatusBadRequest, "AUTH_004", "invalid order ID", nil)
+	}
+
+	detail, studentName, err := h.orderService.AdminSearchOrderByID(c.Context(), orderID)
+	if err != nil {
+		return response.ErrorJSON(c, fiber.StatusInternalServerError, "INF_001", "failed to search order", nil)
+	}
+	if detail == nil {
+		return response.ErrorJSON(c, fiber.StatusNotFound, "INF_001", "order not found", nil)
+	}
+
+	result := map[string]any{
+		"order":        detail.Order,
+		"items":        detail.Items,
+		"student_name": studentName,
+	}
+
+	return response.SuccessJSON(c, fiber.StatusOK, result)
+}
+
+// SearchOrdersByStudentName handles GET /api/admin/orders/search/by-student?name=xxx.
+// Returns all orders for students matching the name.
+func (h *OrderHandler) SearchOrdersByStudentName(c *fiber.Ctx) error {
+	name := c.Query("name")
+	if name == "" {
+		return response.ErrorJSON(c, fiber.StatusBadRequest, "AUTH_004", "name query parameter is required", nil)
+	}
+
+	orders, studentNames, _, err := h.orderService.AdminSearchOrdersByStudentName(c.Context(), name)
+	if err != nil {
+		return response.ErrorJSON(c, fiber.StatusInternalServerError, "INF_001", "failed to search orders", nil)
+	}
+
+	result := map[string]any{
+		"orders":        orders,
+		"student_names": studentNames,
+	}
+
+	return response.SuccessJSON(c, fiber.StatusOK, result)
+}
+
+// SearchOrdersByBookletTitle handles GET /api/admin/orders/search/by-booklet?title=xxx.
+// Returns orders containing items matching the booklet title.
+func (h *OrderHandler) SearchOrdersByBookletTitle(c *fiber.Ctx) error {
+	title := c.Query("title")
+	if title == "" {
+		return response.ErrorJSON(c, fiber.StatusBadRequest, "AUTH_004", "title query parameter is required", nil)
+	}
+
+	results, err := h.orderService.AdminSearchOrdersByBookletTitle(c.Context(), title)
+	if err != nil {
+		return response.ErrorJSON(c, fiber.StatusInternalServerError, "INF_001", "failed to search orders", nil)
+	}
+
+	return response.SuccessJSON(c, fiber.StatusOK, results)
+}
+
 

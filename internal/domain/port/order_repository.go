@@ -55,4 +55,15 @@ type OrderRepository interface {
 	// Used after creating an MP preference for a pending order.
 	// Returns model.ErrNotFound if the order does not exist.
 	SetMPPreferenceID(ctx context.Context, id uuid.UUID, mpPreferenceID string) error
+
+	// SearchByOrderID returns a single order with student name and items.
+	// Returns (nil, "", nil, nil) if not found.
+	SearchByOrderID(ctx context.Context, orderID uuid.UUID) (*model.Order, string, []model.OrderItem, error)
+
+	// SearchByStudentName returns all orders for students matching the given name (ILIKE).
+	// Returns (orders, studentNames, itemsMap, error).
+	SearchByStudentName(ctx context.Context, name string) ([]model.Order, map[uuid.UUID]string, map[uuid.UUID][]model.OrderItem, error)
+
+	// SearchByBookletTitle returns orders containing items matching the booklet title (ILIKE).
+	SearchByBookletTitle(ctx context.Context, title string) ([]model.BookletOrderResult, error)
 }

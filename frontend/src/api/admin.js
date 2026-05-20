@@ -21,3 +21,8 @@ export const adminDeleteBooklet = (id) => api.delete(`/admin/booklets/${id}`);
 // Orders
 export const adminGetOrders = (params) => api.get('/admin/orders/details', { params });
 export const adminUpdateOrderStatus = (id, data) => api.put(`/admin/orders/${id}/status`, data);
+
+// Order search
+export const adminSearchOrderByID = (id) => api.get('/admin/orders/search/by-id', { params: { id } });
+export const adminSearchOrdersByStudentName = (name) => api.get('/admin/orders/search/by-student', { params: { name } });
+export const adminSearchOrdersByBookletTitle = (title) => api.get('/admin/orders/search/by-booklet', { params: { title } });

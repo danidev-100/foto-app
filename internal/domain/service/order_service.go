@@ -443,3 +443,38 @@ func (s *OrderService) AdminListOrdersWithDetails(ctx context.Context, status st
 func (s *OrderService) AdminUpdateOrderStatus(ctx context.Context, orderID uuid.UUID, status string) error {
 	return s.orderRepo.UpdateStatus(ctx, orderID, status)
 }
+
+// AdminSearchOrderByID searches for a single order by its ID.
+func (s *OrderService) AdminSearchOrderByID(ctx context.Context, orderID uuid.UUID) (*OrderDetailResponse, string, error) {
+	order, studentName, items, err := s.orderRepo.SearchByOrderID(ctx, orderID)
+	if err != nil {
+		return nil, "", err
+	}
+	if order == nil {
+		return nil, "", nil
+	}
+	return &OrderDetailResponse{Order: order, Items: items}, studentName, nil
+}
+
+// AdminSearchOrdersByStudentName searches for all orders matching a student name.
+func (s *OrderService) AdminSearchOrdersByStudentName(ctx context.Context, name string) ([]OrderDetailResponse, map[uuid.UUID]string, map[uuid.UUID][]model.OrderItem, error) {
+	orders, studentNames, itemsMap, err := s.orderRepo.SearchByStudentName(ctx, name)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	result := make([]OrderDetailResponse, len(orders))
+	for i, o := range orders {
+		result[i] = OrderDetailResponse{
+			Order: &o,
+			Items: itemsMap[o.ID],
+		}
+	}
+
+	return result, studentNames, itemsMap, nil
+}
+
+// AdminSearchOrdersByBookletTitle searches for orders containing a specific booklet.
+func (s *OrderService) AdminSearchOrdersByBookletTitle(ctx context.Context, title string) ([]model.BookletOrderResult, error) {
+	return s.orderRepo.SearchByBookletTitle(ctx, title)
+}

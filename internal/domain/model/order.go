@@ -49,3 +49,14 @@ type Order struct {
 func (o *Order) IsCancellable() bool {
 	return o.Status == OrderStatusPending || o.Status == OrderStatusConfirmed
 }
+
+// BookletOrderResult represents a student's order containing a specific booklet.
+type BookletOrderResult struct {
+	StudentName  string `json:"student_name"`
+	StudentID    string `json:"student_id"`
+	OrderID      string `json:"order_id"`
+	BookletTitle string `json:"booklet_title"`
+	Quantity     int    `json:"quantity"`
+	OrderStatus  string `json:"order_status"`
+	CreatedAt    string `json:"created_at"`
+}

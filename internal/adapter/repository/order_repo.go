@@ -274,6 +274,121 @@ func (r *OrderRepo) ListAllWithStudentName(ctx context.Context, status string, p
 	return orders, studentNames, total, rows.Err()
 }
 
+// SearchByOrderID returns a single order with student name and items.
+func (r *OrderRepo) SearchByOrderID(ctx context.Context, orderID uuid.UUID) (*model.Order, string, []model.OrderItem, error) {
+	// Get order with student name
+	var o model.Order
+	var studentName string
+	err := r.pool.QueryRow(ctx, `
+		SELECT o.id, o.student_id, o.total, o.status, o.payment_method, o.payment_status,
+		       o.mp_preference_id, o.notes, o.delivery_date, o.created_at, o.updated_at,
+		       s.name as student_name
+		FROM orders o JOIN students s ON o.student_id = s.id
+		WHERE o.id = $1
+	`, orderID).Scan(
+		&o.ID, &o.StudentID, &o.Total, &o.Status, &o.PaymentMethod, &o.PaymentStatus,
+		&o.MPPreferenceID, &o.Notes, &o.DeliveryDate, &o.CreatedAt, &o.UpdatedAt,
+		&studentName,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, "", nil, nil
+		}
+		return nil, "", nil, fmt.Errorf("search order by id: %w", err)
+	}
+
+	// Get items
+	items, err := r.FindItemsByOrderID(ctx, orderID)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	return &o, studentName, items, nil
+}
+
+// SearchByStudentName returns all orders for students matching the given name (ILIKE).
+func (r *OrderRepo) SearchByStudentName(ctx context.Context, name string) ([]model.Order, map[uuid.UUID]string, map[uuid.UUID][]model.OrderItem, error) {
+	pattern := "%" + name + "%"
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT o.id, o.student_id, o.total, o.status, o.payment_method, o.payment_status,
+		       o.mp_preference_id, o.notes, o.delivery_date, o.created_at, o.updated_at,
+		       s.name as student_name
+		FROM orders o JOIN students s ON o.student_id = s.id
+		WHERE s.name ILIKE $1
+		ORDER BY o.created_at DESC
+	`, pattern)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("search orders by student name: %w", err)
+	}
+	defer rows.Close()
+
+	var orders []model.Order
+	studentNames := make(map[uuid.UUID]string)
+	orderIDs := make([]uuid.UUID, 0)
+
+	for rows.Next() {
+		var o model.Order
+		var studentName string
+		err := rows.Scan(
+			&o.ID, &o.StudentID, &o.Total, &o.Status, &o.PaymentMethod, &o.PaymentStatus,
+			&o.MPPreferenceID, &o.Notes, &o.DeliveryDate, &o.CreatedAt, &o.UpdatedAt,
+			&studentName,
+		)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("scan order: %w", err)
+		}
+		orders = append(orders, o)
+		studentNames[o.StudentID] = studentName
+		orderIDs = append(orderIDs, o.ID)
+	}
+
+	if len(orders) == 0 {
+		return []model.Order{}, map[uuid.UUID]string{}, map[uuid.UUID][]model.OrderItem{}, nil
+	}
+
+	// Batch load items
+	itemsMap, err := r.FindItemsByOrderIDs(ctx, orderIDs)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return orders, studentNames, itemsMap, rows.Err()
+}
+
+// SearchByBookletTitle returns orders containing items matching the booklet title (ILIKE).
+func (r *OrderRepo) SearchByBookletTitle(ctx context.Context, title string) ([]model.BookletOrderResult, error) {
+	pattern := "%" + title + "%"
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT s.name, o.student_id, o.id, oi.title, oi.quantity, o.status, o.created_at
+		FROM order_items oi
+		JOIN orders o ON oi.order_id = o.id
+		JOIN students s ON o.student_id = s.id
+		WHERE oi.title ILIKE $1
+		ORDER BY o.created_at DESC
+	`, pattern)
+	if err != nil {
+		return nil, fmt.Errorf("search orders by booklet title: %w", err)
+	}
+	defer rows.Close()
+
+	var results []model.BookletOrderResult
+	for rows.Next() {
+		var r model.BookletOrderResult
+		err := rows.Scan(&r.StudentName, &r.StudentID, &r.OrderID, &r.BookletTitle, &r.Quantity, &r.OrderStatus, &r.CreatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("scan booklet order result: %w", err)
+		}
+		results = append(results, r)
+	}
+
+	if results == nil {
+		results = []model.BookletOrderResult{}
+	}
+	return results, rows.Err()
+}
+
 // UpdateStatus changes the order's status and sets updated_at to NOW().
 func (r *OrderRepo) UpdateStatus(ctx context.Context, id uuid.UUID, status string) error {
 	query := `UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2`

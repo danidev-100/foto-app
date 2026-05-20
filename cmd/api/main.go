@@ -89,9 +89,10 @@ func main() {
 	cartHandler := handler.NewCartHandler(cartService)
 	orderHandler := handler.NewOrderHandler(orderService)
 	paymentHandler := handler.NewPaymentHandler(paymentService)
+	userHandler := handler.NewUserHandler(studentRepo)
 
 	// ── Routes ─────────────────────────────────────────────────────────
-	http.SetupRoutes(app, logger, authHandler, catalogHandler, cartHandler, orderHandler, paymentHandler, cfg.JWTSecret)
+	http.SetupRoutes(app, logger, authHandler, catalogHandler, cartHandler, orderHandler, paymentHandler, userHandler, cfg.JWTSecret)
 
 	// ── Graceful shutdown ──────────────────────────────────────────────
 	go func() {
