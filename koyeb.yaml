@@ -1,0 +1,36 @@
+---
+name: foto-app
+services:
+  - name: backend
+    type: web
+    git:
+      repository: danidev-100/foto-app
+      branch: main
+    dockerfile: Dockerfile
+    env:
+      - key: DATABASE_URL
+        scope: build-and-run-time
+        secret: true
+      - key: JWT_SECRET
+        scope: build-and-run-time
+        generate: true
+      - key: MP_ACCESS_TOKEN
+        scope: build-and-run-time
+        secret: true
+      - key: MP_SANDBOX
+        scope: build-and-run-time
+        value: "true"
+      - key: SERVER_PORT
+        scope: build-and-run-time
+        value: "8080"
+      - key: LOG_LEVEL
+        scope: build-and-run-time
+        value: "info"
+    ports:
+      - port: 8080
+        protocol: http
+        route: /
+    instance_types:
+      - nano
+    regions:
+      - fra
