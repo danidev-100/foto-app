@@ -1,4 +1,4 @@
-.PHONY: run build test fmt migrate-up migrate-down clean
+.PHONY: run build test fmt migrate-up migrate-down clean help docker-build docker-up docker-down docker-logs docker-clean docker-redeploy
 
 # ─── Variables ────────────────────────────────────────────────────────
 APP_NAME   := foto-app
@@ -47,6 +47,34 @@ migrate-down:
 	@echo "Drop and re-create with:"
 	@echo "  psql \$$DATABASE_URL -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'"
 	@echo "Then run the app to re-apply migrations."
+
+# ─── Docker (VPS Deploy) ──────────────────────────────────────────────
+
+## docker-build: build all images
+docker-build:
+	docker compose build
+
+## docker-up: start all services
+docker-up:
+	docker compose up -d
+
+## docker-down: stop all services
+docker-down:
+	docker compose down
+
+## docker-logs: view logs
+docker-logs:
+	docker compose logs -f
+
+## docker-clean: stop and remove volumes (DESTROYS data)
+docker-clean:
+	docker compose down -v
+
+## docker-redeploy: rebuild and restart
+docker-redeploy:
+	docker compose down
+	docker compose build
+	docker compose up -d
 
 # ─── Help ────────────────────────────────────────────────────────────
 
