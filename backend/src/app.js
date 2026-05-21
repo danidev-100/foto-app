@@ -10,6 +10,7 @@ import cartRoutes from './routes/cart.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import webhookRoutes from './routes/webhook.routes.js';
 import { errorMiddleware } from './middleware/error.js';
+import { getBankDetails } from './controllers/config.controller.js';
 
 const app = express();
 
@@ -53,6 +54,7 @@ function sanitizeDecimals(obj) {
 
 // ── Routes ─────────────────────────────────────────────────────────
 app.get('/api/health', healthCheck);
+app.get('/api/config/bank-details', getBankDetails);
 app.use('/api/auth', authRoutes);
 app.use('/api/catalog', catalogRoutes);
 app.use('/api/admin', adminRoutes);

@@ -21,6 +21,7 @@ enum OrderStatus {
 enum PaymentMethod {
   mercadopago
   cash
+  transfer
 }
 
 enum PaymentStatus {

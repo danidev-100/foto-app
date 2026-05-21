@@ -179,6 +179,18 @@ export default function Cart() {
             Pagar con Mercado Pago
           </button>
 
+          {/* Transfer Button */}
+          <button
+            onClick={() => handleCheckout('transfer')}
+            disabled={processing}
+            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-surface-50 text-primary-700 font-semibold py-3 px-6 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed ring-1 ring-primary-300"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+            Transferencia bancaria
+          </button>
+
           {/* Cash Button */}
           <button
             onClick={() => handleCheckout('cash')}

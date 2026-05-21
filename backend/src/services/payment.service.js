@@ -54,6 +54,9 @@ export class PaymentService {
     if (method === 'cash') {
       return this.initiateCash(order);
     }
+    if (method === 'transfer') {
+      return this.initiateTransfer(order);
+    }
 
     const err = new Error('invalid payment method');
     err.code = 'PAY_002';
@@ -223,6 +226,21 @@ export class PaymentService {
       case 'refunded': return 'refunded';
       default: return 'pending';
     }
+  }
+
+  async initiateTransfer(order) {
+    const payment = await prisma.payment.create({
+      data: {
+        id: uuidv4(),
+        orderId: order.id,
+        method: 'transfer',
+        status: 'pending',
+        amount: order.total,
+        externalReference: order.id,
+      },
+    });
+
+    return { payment };
   }
 
   async confirmCashPayment(orderId) {

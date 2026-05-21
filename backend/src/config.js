@@ -9,6 +9,13 @@ export const config = {
   mpAccessToken: process.env.MP_ACCESS_TOKEN || '',
   mpSandbox: process.env.MP_SANDBOX !== 'false',
   logLevel: process.env.LOG_LEVEL || 'info',
+
+  // Bank transfer details
+  bankName: process.env.BANK_NAME || '',
+  bankCbu: process.env.BANK_CBU || '',
+  bankAlias: process.env.BANK_ALIAS || '',
+  bankHolder: process.env.BANK_HOLDER || '',
+  bankCuit: process.env.BANK_CUIT || '',
 };
 
 if (!config.databaseUrl) throw new Error('DATABASE_URL is required');
