@@ -71,10 +71,14 @@ export class PaymentService {
       currencyId: 'ARS',
     }));
 
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'http://localhost:3000';
+
     const pref = await this.gateway.createPreference(order.id, mpItems, {
-      success: '',
-      failure: '',
-      pending: '',
+      success: `${baseUrl}/orders`,
+      failure: `${baseUrl}/orders`,
+      pending: `${baseUrl}/orders`,
     });
 
     const payment = await prisma.payment.create({
