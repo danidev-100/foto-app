@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { getOrders, cancelOrder, initiatePayment } from '../api/orders';
 
 const statusConfig = {
-  pending: { label: 'Pendiente', className: 'badge bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800' },
-  ready: { label: 'Listo', className: 'badge bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800' },
-  delivered: { label: 'Entregado', className: 'badge bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' },
-  cancelled: { label: 'Cancelado', className: 'badge bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800' },
+  pending: { label: 'Pendiente', className: 'badge bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 ring-1 ring-amber-400 dark:ring-amber-700' },
+  ready: { label: 'Listo', className: 'badge bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 ring-1 ring-blue-400 dark:ring-blue-700' },
+  delivered: { label: 'Entregado', className: 'badge bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 ring-1 ring-green-400 dark:ring-green-700' },
+  cancelled: { label: 'Cancelado', className: 'badge bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800' },
 };
 
 const paymentConfig = {

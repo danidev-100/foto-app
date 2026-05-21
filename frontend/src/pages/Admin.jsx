@@ -224,10 +224,10 @@ export default function Admin() {
 
   const StatusBadge = ({ status, orderId }) => {
     const styles = {
-      pending: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800',
-      ready: 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800',
-      delivered: 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800',
-      cancelled: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800',
+      pending: 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 ring-1 ring-amber-400 dark:ring-amber-700',
+      ready: 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 ring-1 ring-blue-400 dark:ring-blue-700',
+      delivered: 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 ring-1 ring-green-400 dark:ring-green-700',
+      cancelled: 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 ring-1 ring-red-400 dark:ring-red-700',
     };
     const labels = {
       pending: 'Pendiente',
@@ -909,10 +909,10 @@ export default function Admin() {
                     <td className="px-5 py-3">
                       <button
                         onClick={() => updateOrderStatus(order.id, 'delivered')}
-                        className="badge bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/30 hover:text-green-700 dark:hover:text-green-400 hover:ring-green-200 dark:hover:ring-green-800 transition-colors"
-                        title="Clic para marcar como retirado"
+                        className="badge bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 ring-1 ring-amber-400 dark:ring-amber-700 cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/50 hover:text-green-800 dark:hover:text-green-300 hover:ring-green-400 dark:hover:ring-green-700 transition-colors"
+                        title="Clic para marcar como entregado"
                       >
-                        Pendiente → Retirado
+                        Pendiente → Entregado
                       </button>
                     </td>
                       </tr>
@@ -966,9 +966,9 @@ export default function Admin() {
                         {result.orderStatus === 'pending' && (
                           <button
                             onClick={() => updateOrderStatus(result.orderId, 'delivered')}
-                            className="btn-secondary text-xs bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 ring-1 ring-green-200 dark:ring-green-800"
+                            className="btn-secondary text-xs bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800 ring-1 ring-green-400 dark:ring-green-700"
                           >
-                            Retirado
+                            Entregado
                           </button>
                         )}
                       </td>
@@ -1031,11 +1031,11 @@ export default function Admin() {
                     <td className="px-5 py-3 text-right font-bold text-surface-900 dark:text-surface-100">{formatPrice(order.total)}</td>
                     <td className="px-5 py-3">
                       {order.status === 'delivered' ? (
-                        <span className="badge bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800">Entregado</span>
+                        <span className="badge bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 ring-1 ring-green-400 dark:ring-green-700">Entregado</span>
                       ) : order.status === 'ready' ? (
                         <button
                           onClick={() => advanceOrderStatus(order.id, 'ready')}
-                          className="badge bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/30 hover:text-green-700 dark:hover:text-green-400 hover:ring-green-200 dark:hover:ring-green-800 transition-colors"
+                          className="badge bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 ring-1 ring-blue-400 dark:ring-blue-700 cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/50 hover:text-green-800 dark:hover:text-green-300 hover:ring-green-400 dark:hover:ring-green-700 transition-colors"
                           title="Clic para marcar como entregado"
                         >
                           Listo → Entregado
@@ -1043,7 +1043,7 @@ export default function Admin() {
                       ) : (
                         <button
                           onClick={() => advanceOrderStatus(order.id, 'pending')}
-                          className="badge bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-400 hover:ring-blue-200 dark:hover:ring-blue-800 transition-colors"
+                          className="badge bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 ring-1 ring-amber-400 dark:ring-amber-700 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:text-blue-800 dark:hover:text-blue-300 hover:ring-blue-400 dark:hover:ring-blue-700 transition-colors"
                           title="Clic para marcar como listo"
                         >
                           Pendiente → Listo
