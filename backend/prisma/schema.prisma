@@ -1,0 +1,209 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+enum OrderStatus {
+  pending
+  ready
+  delivered
+  cancelled
+}
+
+enum PaymentMethod {
+  mercadopago
+  cash
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+// ============================================================================
+// Models
+// ============================================================================
+
+model Course {
+  id          String     @id @default(uuid())
+  name        String     @db.VarChar(255)
+  description String?    @db.Text
+  isActive    Boolean    @default(true) @map("is_active")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  divisions   Division[]
+  booklets    Booklet[]
+  students    Student[]
+
+  @@map("courses")
+}
+
+model Division {
+  id        String   @id @default(uuid())
+  courseId  String   @map("course_id")
+  name      String   @db.VarChar(255)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  booklets  Booklet[]
+
+  @@map("divisions")
+}
+
+model Student {
+  id            String    @id @default(uuid())
+  name          String    @db.VarChar(255)
+  email         String    @unique @db.VarChar(255)
+  passwordHash  String    @map("password_hash") @db.VarChar(255)
+  phone         String?   @db.VarChar(50)
+  courseId      String?   @map("course_id")
+  isAdmin       Boolean   @default(false) @map("is_admin")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  course        Course?   @relation(fields: [courseId], references: [id])
+  cart          Cart?
+  orders        Order[]
+
+  @@map("students")
+}
+
+model Booklet {
+  id           String    @id @default(uuid())
+  courseId     String    @map("course_id")
+  divisionId   String    @map("division_id")
+  title        String    @db.VarChar(255)
+  description  String?   @db.Text
+  currentPrice Decimal   @map("current_price") @db.Decimal(10, 2)
+  stock        Int       @default(0)
+  imageUrl     String?   @map("image_url") @db.VarChar(500)
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  course       Course    @relation(fields: [courseId], references: [id])
+  division     Division  @relation(fields: [divisionId], references: [id])
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+
+  @@map("booklets")
+}
+
+model Cart {
+  id          String     @id @default(uuid())
+  studentId   String     @unique @map("student_id")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  student     Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  items       CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id          String    @id @default(uuid())
+  cartId      String    @map("cart_id")
+  bookletId   String    @map("booklet_id")
+  quantity    Int       @default(1)
+  unitPrice   Decimal   @map("unit_price") @db.Decimal(10, 2)
+  title       String    @db.VarChar(255)
+  colorType   String?   @map("color_type") @db.VarChar(50)
+  deliveryDays Int?     @map("delivery_days")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  cart        Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  booklet     Booklet   @relation(fields: [bookletId], references: [id])
+
+  @@unique([cartId, bookletId])
+  @@map("cart_items")
+}
+
+model Order {
+  id              String        @id @default(uuid())
+  studentId       String        @map("student_id")
+  total           Decimal       @db.Decimal(10, 2)
+  status          OrderStatus   @default(pending)
+  paymentMethod   PaymentMethod @map("payment_method")
+  paymentStatus   PaymentStatus @map("payment_status") @default(pending)
+  mpPreferenceId  String?       @map("mp_preference_id") @db.VarChar(255)
+  notes           String?       @db.Text
+  deliveryDate    DateTime?     @map("delivery_date")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  student         Student       @relation(fields: [studentId], references: [id])
+  items           OrderItem[]
+  payment         Payment?
+  paymentEvents   PaymentEvent[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id           String    @id @default(uuid())
+  orderId      String    @map("order_id")
+  bookletId    String    @map("booklet_id")
+  title        String    @db.VarChar(255)
+  quantity     Int
+  unitPrice    Decimal   @map("unit_price") @db.Decimal(10, 2)
+  deliveryDays Int?      @map("delivery_days")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  order        Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  booklet      Booklet   @relation(fields: [bookletId], references: [id])
+
+  @@map("order_items")
+}
+
+model Payment {
+  id                  String    @id @default(uuid())
+  orderId             String    @unique @map("order_id")
+  method              String    @db.VarChar(50)
+  status              String    @db.VarChar(50) @default("pending")
+  amount              Decimal   @db.Decimal(10, 2)
+  mpPaymentId         String?   @map("mp_payment_id") @db.VarChar(255)
+  externalReference   String?   @map("external_reference") @db.VarChar(255)
+  paidAt              DateTime? @map("paid_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  order               Order     @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([mpPaymentId])
+  @@map("payments")
+}
+
+model PaymentEvent {
+  id          String    @id @default(uuid())
+  orderId     String?   @map("order_id")
+  eventId     String    @unique @map("event_id") @db.VarChar(255)
+  topic       String?   @db.VarChar(100)
+  action      String?   @db.VarChar(100)
+  mpPaymentId String?   @map("mp_payment_id") @db.VarChar(255)
+  rawBody     Json?     @map("raw_body")
+  processed   Boolean   @default(false)
+  processedAt DateTime? @map("processed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  order       Order?    @relation(fields: [orderId], references: [id])
+
+  @@index([mpPaymentId])
+  @@map("payment_events")
+}

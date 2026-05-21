@@ -1,48 +1,51 @@
-services:
-  # ── PostgreSQL ──
-  db:
-    image: postgres:17-alpine
-    environment:
-      POSTGRES_DB: foto_app
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
-  # ── Backend (Go) ──
-  backend:
+# ── Backend (Go) ──
+  backend-go:
     build:
       context: .
       dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
     environment:
       SERVER_PORT: 8080
-      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/foto_app?sslmode=disable
+      DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: 24h
       MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
       MP_SANDBOX: ${MP_SANDBOX:-true}
       LOG_LEVEL: info
       SHUTDOWN_TIMEOUT: 10s
-    depends_on:
-      db:
-        condition: service_healthy
     restart: unless-stopped
+    profiles:
+      - go
 
-  # ── Frontend (React + Nginx) ──
-  frontend:
+  # ── Backend (Node.js) ──
+  backend-node:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.node
     ports:
-      - "${APP_PORT:-80}:80"
-    depends_on:
-      - backend
+      - "8080:8080"
+    environment:
+      SERVER_PORT: 8080
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
+      MP_SANDBOX: ${MP_SANDBOX:-true}
+      LOG_LEVEL: info
     restart: unless-stopped
+    profiles:
+      - node
+    command: >
+      sh -c "npx prisma db push --accept-data-loss && node src/server.js"
 
-volumes:
-  pgdata:
+# ── Frontend (React + Nginx) ──
+frontend:
+  build:
+    context: ./frontend
+    dockerfile: Dockerfile
+  ports:
+    - "${APP_PORT:-80}:80"
+  depends_on:
+    - backend-go
+    - backend-node
+  restart: unless-stopped
