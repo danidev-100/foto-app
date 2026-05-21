@@ -26,7 +26,7 @@ function AdminRoute({ children }) {
     </div>
   );
   if (!user) return <Navigate to="/login" />;
-  if (!user.is_admin) return <Navigate to="/" />;
+  if (!user.isAdmin) return <Navigate to="/" />;
   return children;
 }
 
@@ -127,7 +127,7 @@ function Layout({ children }) {
               <NavItem to="/courses" icon={<HomeIcon />} label="Cursos" />
               <NavItem to="/cart" icon={<CartBadge />} label="Carrito" />
               <NavItem to="/orders" icon={<OrdersIcon />} label="Pedidos" />
-              {user?.is_admin && (
+              {user?.isAdmin && (
                 <NavItem to="/admin" icon={<AdminIcon />} label="Admin" />
               )}
             </nav>
@@ -140,7 +140,7 @@ function Layout({ children }) {
                   <span className="text-sm font-medium text-primary-700">{user?.name?.charAt(0)?.toUpperCase()}</span>
                 </div>
                 <span className="text-sm text-surface-600">{user?.name}</span>
-                {user?.is_admin && (
+                {user?.isAdmin && (
                   <span className="badge bg-primary-100 text-primary-700 text-xs">Admin</span>
                 )}
               </div>

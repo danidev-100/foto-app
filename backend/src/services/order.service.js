@@ -274,8 +274,7 @@ export class OrderService {
     const result = orders.map((o) => {
       studentNames[o.student.id] = o.student.name;
       return {
-        ...o,
-        studentId: o.student.id,
+        order: o,
         items: itemsMap[o.id] || [],
       };
     });
@@ -356,7 +355,7 @@ export class OrderService {
     const studentNames = {};
     const result = orders.map((o) => {
       studentNames[o.student.id] = o.student.name;
-      return { ...o, studentId: o.student.id, items: itemsMap[o.id] || [] };
+      return { order: o, items: itemsMap[o.id] || [] };
     });
 
     return { orders: result, studentNames, itemsMap };

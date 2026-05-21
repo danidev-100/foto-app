@@ -267,7 +267,7 @@ export default function Admin() {
 
   const toggleStudentRole = async (student) => {
     try {
-      await updateStudent(student.id, { is_admin: !student.is_admin });
+      await updateStudent(student.id, { is_admin: !student.isAdmin });
       showToast(`Rol de ${student.name} actualizado`);
       loadStudents(studentsPage);
     } catch {
@@ -277,7 +277,7 @@ export default function Admin() {
 
   const toggleStudentStatus = async (student) => {
     try {
-      await updateStudent(student.id, { is_active: !student.is_active });
+      await updateStudent(student.id, { is_active: !student.isActive });
       showToast(`Estado de ${student.name} actualizado`);
       loadStudents(studentsPage);
     } catch {
@@ -317,7 +317,7 @@ export default function Admin() {
     // Build map of division name -> division ID for selected divisions
     const map = {};
     for (const divName of selDivisions) {
-      const matchedDiv = divisions.find(d => d.course_id === matchedCourse.id && d.name === divName);
+      const matchedDiv = divisions.find(d => d.courseId === matchedCourse.id && d.name === divName);
       if (matchedDiv) {
         map[divName] = matchedDiv.id;
       } else {
@@ -440,7 +440,13 @@ export default function Admin() {
     }
   };
 
-  const formatPrice = (cents) => `$${(cents / 100).toLocaleString('es-AR')}`;
+  const toNum = (val) => {
+    if (val === null || val === undefined) return 0;
+    if (typeof val === 'object' && typeof val.toNumber === 'function') return val.toNumber();
+    return Number(val);
+  };
+
+  const formatPrice = (cents) => `$${(toNum(cents) / 100).toLocaleString('es-AR')}`;
 
   // Extract division names from description (format: "Divisiones: A, B, C")
   const getDivisionsFromDesc = (desc) => {
@@ -610,13 +616,12 @@ export default function Admin() {
             <div>
               <label className="label-field">Precio ($)</label>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={bookletForm.current_price}
                 onChange={(e) => { setBookletForm({ ...bookletForm, current_price: e.target.value }); setErrors(prev => ({ ...prev, current_price: '' })); }}
                 className={`input-field mt-1.5 ${errors.current_price ? 'border-red-400 ring-1 ring-red-400' : ''}`}
                 placeholder="1500.00"
-                step="0.01"
-                min="0"
               />
               {errors.current_price && <p className="text-xs text-red-500 mt-1">{errors.current_price}</p>}
             </div>
@@ -674,8 +679,8 @@ export default function Admin() {
             </thead>
             <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
               {booklets.map((b) => {
-                const course = courses.find((c) => c.id === b.course_id);
-                const division = divisions.find((d) => d.id === b.division_id);
+                const course = courses.find((c) => c.id === b.courseId);
+                const division = divisions.find((d) => d.id === b.divisionId);
                 const divNames = getDivisionsFromDesc(b.description);
                 return (
                   <tr key={b.id} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
@@ -688,10 +693,10 @@ export default function Admin() {
                         </span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-right font-medium text-surface-900 dark:text-surface-100">{formatPrice(b.current_price)}</td>
+                    <td className="px-5 py-3 text-right font-medium text-surface-900 dark:text-surface-100">{formatPrice(b.currentPrice)}</td>
                     <td className="px-5 py-3">
-                      <span className={`badge ${b.is_active ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' : 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'}`}>
-                        {b.is_active ? 'Activo' : 'Inactivo'}
+                      <span className={`badge ${b.isActive ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' : 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'}`}>
+                        {b.isActive ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
                     <td className="px-5 py-3 text-right">
@@ -707,12 +712,12 @@ export default function Admin() {
                           // Clean description for editing (remove "Divisiones: ..." suffix)
                           const cleanDesc = (b.description || '').replace(/\s*\(Divisiones:.*\)/, '').replace(/Divisiones:.*$/, '').trim();
                           setBookletForm({
-                            course_id: b.course_id,
-                            division_id: b.division_id,
+                            course_id: b.courseId,
+                            division_id: b.divisionId,
                             title: b.title,
                             description: cleanDesc,
-                            current_price: (b.current_price / 100).toString(),
-                            is_active: b.is_active,
+                            current_price: b.currentPrice ? (toNum(b.currentPrice) / 100).toFixed(2) : '',
+                            is_active: b.isActive,
                           });
                         }}
                         className="text-primary-600 hover:text-primary-700 mr-3 text-sm font-medium"
@@ -823,7 +828,7 @@ export default function Admin() {
                     <td className="px-5 py-3">
                       <span className="font-medium text-surface-900 dark:text-surface-100">#{searchOrderResult.order.id.slice(0, 8)}</span>
                       <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
-                        {new Date(searchOrderResult.order.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {new Date(searchOrderResult.order.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </p>
                     </td>
                     <td className="px-5 py-3 text-surface-700 dark:text-surface-300">{searchOrderResult.student_name}</td>
@@ -843,9 +848,9 @@ export default function Admin() {
                     </td>
                     <td className="px-5 py-3">
                       <span className={`badge ${
-                        searchOrderResult.order.payment_method === 'cash' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' :
+                        searchOrderResult.order.paymentMethod === 'cash' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' :
                         'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800'
-                      }`}>{searchOrderResult.order.payment_method === 'cash' ? 'Efectivo' : 'Mercado Pago'}</span>
+                      }`}>{searchOrderResult.order.paymentMethod === 'cash' ? 'Efectivo' : 'Mercado Pago'}</span>
                     </td>
                   </tr>
                 </tbody>
@@ -878,13 +883,13 @@ export default function Admin() {
                   {searchStudentResults.map((orderData) => {
                     const order = orderData.order;
                     const items = orderData.items || [];
-                    const name = searchStudentNames[order.student_id] || '—';
+                    const name = searchStudentNames[order.studentId] || '—';
                     return (
                       <tr key={order.id} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
                         <td className="px-5 py-3">
                           <span className="font-medium text-surface-900 dark:text-surface-100">#{order.id.slice(0, 8)}</span>
                           <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
-                            {new Date(order.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {new Date(order.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </p>
                         </td>
                         <td className="px-5 py-3 text-surface-700 dark:text-surface-300">{name}</td>
@@ -901,7 +906,7 @@ export default function Admin() {
                     <td className="px-5 py-3 text-right font-bold text-surface-900 dark:text-surface-100">{formatPrice(order.total)}</td>
                     <td className="px-5 py-3">
                       <button
-                        onClick={() => markAsDelivered(order.id)}
+                        onClick={() => updateOrderStatus(order.id, 'delivered')}
                         className="badge bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/30 hover:text-green-700 dark:hover:text-green-400 hover:ring-green-200 dark:hover:ring-green-800 transition-colors"
                         title="Clic para marcar como retirado"
                       >
@@ -941,24 +946,24 @@ export default function Admin() {
                 <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
                   {searchBookletResults.map((result, idx) => (
                     <tr key={idx} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
-                      <td className="px-5 py-3 font-medium text-surface-900 dark:text-surface-100">{result.student_name}</td>
+                      <td className="px-5 py-3 font-medium text-surface-900 dark:text-surface-100">{result.studentName}</td>
                       <td className="px-5 py-3">
-                        <span className="font-medium text-surface-900 dark:text-surface-100">#{result.order_id.slice(0, 8)}</span>
+                        <span className="font-medium text-surface-900 dark:text-surface-100">#{result.orderId.slice(0, 8)}</span>
                         <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
-                          {new Date(result.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {new Date(result.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </p>
                       </td>
-                      <td className="px-5 py-3 text-surface-700 dark:text-surface-300">{result.booklet_title}</td>
+                      <td className="px-5 py-3 text-surface-700 dark:text-surface-300">{result.bookletTitle}</td>
                       <td className="px-5 py-3 text-right">
                         <span className="text-lg font-bold text-primary-600 dark:text-primary-400">{result.quantity}x</span>
                       </td>
                       <td className="px-5 py-3">
-                        <StatusBadge status={result.order_status} orderId={result.order_id} />
+                        <StatusBadge status={result.orderStatus} orderId={result.orderId} />
                       </td>
                       <td className="px-5 py-3 text-right">
-                        {result.order_status === 'pending' && (
+                        {result.orderStatus === 'pending' && (
                           <button
-                            onClick={() => markAsDelivered(result.order_id)}
+                            onClick={() => updateOrderStatus(result.orderId, 'delivered')}
                             className="btn-secondary text-xs bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 ring-1 ring-green-200 dark:ring-green-800"
                           >
                             Retirado
@@ -1001,13 +1006,13 @@ export default function Admin() {
               {orders.map((orderData) => {
                 const order = orderData.order;
                 const items = orderData.items || [];
-                const studentName = studentNames[order.student_id] || '—';
+                    const studentName = studentNames[order.studentId] || '—';
                 return (
                   <tr key={order.id} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
                     <td className="px-5 py-3">
                       <span className="font-medium text-surface-900 dark:text-surface-100">#{order.id.slice(0, 8)}</span>
                       <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
-                        {new Date(order.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {new Date(order.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </p>
                     </td>
                     <td className="px-5 py-3 text-surface-700 dark:text-surface-300">{studentName}</td>
@@ -1075,13 +1080,13 @@ export default function Admin() {
                         <td className="px-5 py-3 font-medium text-surface-900 dark:text-surface-100">{s.name}</td>
                         <td className="px-5 py-3 text-surface-500 dark:text-surface-400">{s.email}</td>
                         <td className="px-5 py-3">
-                          <span className={`badge ${s.is_admin ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 ring-1 ring-purple-200 dark:ring-purple-800' : 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'}`}>
-                            {s.is_admin ? 'Admin' : 'Estudiante'}
+                          <span className={`badge ${s.isAdmin ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 ring-1 ring-purple-200 dark:ring-purple-800' : 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'}`}>
+                            {s.isAdmin ? 'Admin' : 'Estudiante'}
                           </span>
                         </td>
                         <td className="px-5 py-3">
-                          <span className={`badge ${s.is_active ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800'}`}>
-                            {s.is_active ? 'Activo' : 'Inactivo'}
+                          <span className={`badge ${s.isActive ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800'}`}>
+                            {s.isActive ? 'Activo' : 'Inactivo'}
                           </span>
                         </td>
                         <td className="px-5 py-3 text-right">
@@ -1089,13 +1094,13 @@ export default function Admin() {
                             onClick={() => toggleStudentRole(s)}
                             className="btn-secondary text-xs mr-2"
                           >
-                            {s.is_admin ? 'Quitar admin' : 'Hacer admin'}
+                            {s.isAdmin ? 'Quitar admin' : 'Hacer admin'}
                           </button>
                           <button
                             onClick={() => toggleStudentStatus(s)}
                             className="btn-secondary text-xs"
                           >
-                            {s.is_active ? 'Desactivar' : 'Activar'}
+                            {s.isActive ? 'Desactivar' : 'Activar'}
                           </button>
                         </td>
                       </tr>

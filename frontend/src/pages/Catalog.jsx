@@ -84,7 +84,8 @@ export default function Catalog({ onCartUpdate }) {
     setBooklets([]);
   };
 
-  const formatPrice = (cents) => `$${(cents / 100).toLocaleString('es-AR')}`;
+  const toNum = (val) => (val === null || val === undefined ? 0 : Number(val));
+  const formatPrice = (cents) => `$${(toNum(cents) / 100).toLocaleString('es-AR')}`;
 
   const getDivisionsFromDesc = (desc) => {
     if (!desc) return '';
@@ -190,7 +191,7 @@ export default function Catalog({ onCartUpdate }) {
                         <td className="px-5 py-3 text-surface-600 max-w-xs">
                           <p className="truncate">{b.description || '—'}</p>
                         </td>
-                        <td className="px-5 py-3 text-right font-bold text-primary-600">{formatPrice(b.current_price)}</td>
+                        <td className="px-5 py-3 text-right font-bold text-primary-600">{formatPrice(b.currentPrice)}</td>
                         <td className="px-5 py-3 text-right">
                           <button
                             onClick={() => handleAdd(b)}

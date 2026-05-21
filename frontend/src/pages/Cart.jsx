@@ -60,7 +60,8 @@ export default function Cart() {
     }
   };
 
-  const formatPrice = (cents) => `$${(cents / 100).toLocaleString('es-AR')}`;
+  const toNum = (val) => (val === null || val === undefined ? 0 : Number(val));
+  const formatPrice = (cents) => `$${(toNum(cents) / 100).toLocaleString('es-AR')}`;
 
   if (loading) {
     return (
@@ -87,7 +88,7 @@ export default function Cart() {
     );
   }
 
-  const total = cart.items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
+  const total = cart.items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -115,7 +116,7 @@ export default function Cart() {
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-surface-900 dark:text-surface-100 truncate">{item.title}</h3>
-                <p className="text-sm text-surface-500 dark:text-surface-400 mt-0.5">{formatPrice(item.unit_price)} c/u</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400 mt-0.5">{formatPrice(item.unitPrice)} c/u</p>
               </div>
 
               {/* Quantity controls */}
@@ -149,7 +150,7 @@ export default function Cart() {
             {/* Subtotal */}
             <div className="mt-3 pt-3 border-t border-surface-100 dark:border-surface-700 flex justify-end">
               <span className="text-sm font-medium text-surface-700 dark:text-surface-300">
-                Subtotal: {formatPrice(item.unit_price * item.quantity)}
+                Subtotal: {formatPrice(item.unitPrice * item.quantity)}
               </span>
             </div>
           </div>

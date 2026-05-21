@@ -53,7 +53,8 @@ export default function Orders() {
     }
   };
 
-  const formatPrice = (cents) => `$${(cents / 100).toLocaleString('es-AR')}`;
+  const toNum = (val) => (val === null || val === undefined ? 0 : Number(val));
+  const formatPrice = (cents) => `$${(toNum(cents) / 100).toLocaleString('es-AR')}`;
   const formatDate = (date) => new Date(date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
 
   if (loading) {
@@ -118,7 +119,7 @@ export default function Orders() {
                           </div>
                           <span className="text-sm text-surface-700 dark:text-surface-300">{item.title}</span>
                         </div>
-                        <span className="text-sm font-medium text-surface-900 dark:text-surface-100">{formatPrice(item.unit_price * item.quantity)}</span>
+                        <span className="text-sm font-medium text-surface-900 dark:text-surface-100">{formatPrice(item.unitPrice * item.quantity)}</span>
                       </div>
                     ))}
                   </div>
