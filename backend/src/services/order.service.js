@@ -3,7 +3,7 @@ import { prisma } from '../lib/prisma.js';
 
 export class OrderService {
   async placeOrder(studentId, { paymentMethod }) {
-    if (paymentMethod !== 'mercadopago' && paymentMethod !== 'cash' && paymentMethod !== 'transfer') {
+    if (paymentMethod !== 'mercadopago' && paymentMethod !== 'cash') {
       const err = new Error("invalid payment method, must be 'mercadopago' or 'cash'");
       err.code = 'PAY_002';
       err.status = 400;

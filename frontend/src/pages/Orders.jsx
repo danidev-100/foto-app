@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { getOrders, cancelOrder, initiatePayment } from '../api/orders';
-import api from '../api/client';
 
 const statusConfig = {
   pending: { label: 'Pendiente', className: 'badge bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 ring-1 ring-amber-400 dark:ring-amber-700' },
@@ -18,15 +17,12 @@ const paymentConfig = {
 const methodLabels = {
   mercadopago: 'Mercado Pago',
   cash: 'Efectivo',
-  transfer: 'Transferencia',
 };
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
-  const [bankDetails, setBankDetails] = useState(null);
-
   useEffect(() => {
     getOrders().then(({ data }) => {
       // Backend returns { order, items } structure, flatten to include items in order
@@ -36,11 +32,6 @@ export default function Orders() {
       }));
       setOrders(orders);
     }).finally(() => setLoading(false));
-
-    // Fetch bank details for transfer orders
-    api.get('/config/bank-details').then(({ data }) => {
-      if (data?.data) setBankDetails(data.data);
-    }).catch(() => {});
   }, []);
 
   const handleCancel = async (id) => {
@@ -141,25 +132,6 @@ export default function Orders() {
                     ))}
                   </div>
                 </div>
-
-                {/* Bank transfer info */}
-                {order.payment_method === 'transfer' && order.payment_status === 'pending' && bankDetails && (
-                  <div className="mx-5 mb-4 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-xl ring-1 ring-primary-200 dark:ring-primary-800">
-                    <h4 className="text-sm font-semibold text-primary-800 dark:text-primary-300 mb-2">
-                      Datos para la transferencia
-                    </h4>
-                    <div className="text-xs text-primary-700 dark:text-primary-400 space-y-1">
-                      <p><span className="font-medium">Banco:</span> {bankDetails.bankName}</p>
-                      <p><span className="font-medium">Titular:</span> {bankDetails.holder}</p>
-                      <p><span className="font-medium">CUIT:</span> {bankDetails.cuit}</p>
-                      <p><span className="font-medium">CBU:</span> <span className="select-all font-mono">{bankDetails.cbu}</span></p>
-                      <p><span className="font-medium">ALIAS:</span> <span className="select-all font-mono">{bankDetails.alias}</span></p>
-                    </div>
-                    <p className="mt-2 text-xs text-primary-600 dark:text-primary-500">
-                      Transferí el total del pedido y compartinos el comprobante. Apenas lo recibamos, lo marcamos como pagado.
-                    </p>
-                  </div>
-                )}
 
                 {/* Footer */}
                 <div className="px-5 py-4 bg-surface-50 dark:bg-surface-800/50 flex items-center justify-between">

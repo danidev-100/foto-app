@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getCart, updateCartItem, removeFromCart, clearCart } from '../api/cart';
 import { placeOrder, initiatePayment } from '../api/orders';
-import api from '../api/client';
 import { useNavigate } from 'react-router-dom';
 
 export default function Cart() {
@@ -9,16 +8,10 @@ export default function Cart() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
   const [processing, setProcessing] = useState(false);
-  const [transferSuccess, setTransferSuccess] = useState(null);
-  const [bankDetails, setBankDetails] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     getCart().then(({ data }) => setCart(data.data)).finally(() => setLoading(false));
-    // Pre-fetch bank details for transfer
-    api.get('/config/bank-details').then(({ data }) => {
-      if (data?.data) setBankDetails(data.data);
-    }).catch(() => {});
   }, []);
 
   const updateQty = async (id, qty) => {
@@ -57,10 +50,6 @@ export default function Cart() {
         } else {
           navigate('/orders');
         }
-      } else if (method === 'transfer') {
-        // Show bank details instead of redirecting
-        setTransferSuccess({ orderId, total: cart.total });
-        setProcessing(false);
       } else {
         // Cash payment - order created, redirect to orders
         navigate('/orders');
@@ -80,75 +69,6 @@ export default function Cart() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (transferSuccess) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-surface-900">Pedido creado</h1>
-          <p className="mt-1 text-surface-500">Completá el pago con transferencia bancaria.</p>
-          <p className="mt-1 text-sm text-surface-400">N° de pedido: <span className="font-mono font-medium text-surface-600">#{transferSuccess.orderId.slice(0, 8)}</span></p>
-        </div>
-
-        {bankDetails ? (
-          <div className="card p-6 space-y-4">
-            <div className="flex items-center gap-3 pb-4 border-b border-surface-200">
-              <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
-                <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-surface-900">Datos para la transferencia</h3>
-                <p className="text-sm text-surface-500">Transferí <strong className="text-primary-600">{formatPrice(transferSuccess.total)}</strong> a esta cuenta:</p>
-              </div>
-            </div>
-
-            <div className="bg-surface-50 rounded-xl p-4 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-surface-500">Banco</span>
-                <span className="font-medium text-surface-900">{bankDetails.bankName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-surface-500">Titular</span>
-                <span className="font-medium text-surface-900">{bankDetails.holder}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-surface-500">CUIT</span>
-                <span className="font-medium text-surface-900">{bankDetails.cuit}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-surface-500">CBU</span>
-                <span className="font-mono font-medium text-surface-900 select-all">{bankDetails.cbu}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-surface-500">ALIAS</span>
-                <span className="font-mono font-medium text-primary-600 select-all">{bankDetails.alias}</span>
-              </div>
-            </div>
-
-            <div className="bg-amber-50 rounded-xl p-4 text-sm text-amber-800">
-              <p>🏦 Una vez que hagas la transferencia, compartinos el comprobante. Apenas lo recibamos, marcamos el pedido como pagado.</p>
-            </div>
-
-            <button onClick={() => navigate('/orders')} className="btn-primary w-full">
-              Ver mis pedidos
-            </button>
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto" />
-            <p className="mt-3 text-surface-500">Cargando datos bancarios...</p>
-          </div>
-        )}
       </div>
     );
   }
@@ -257,18 +177,6 @@ export default function Cart() {
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6zm4 4h-2v-2h2v2zm0-4h-2V7h2v6z"/>
             </svg>
             Pagar con Mercado Pago
-          </button>
-
-          {/* Transfer Button */}
-          <button
-            onClick={() => handleCheckout('transfer')}
-            disabled={processing}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-surface-50 text-primary-700 font-semibold py-3 px-6 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed ring-1 ring-primary-300"
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-            </svg>
-            Transferencia bancaria
           </button>
 
           {/* Cash Button */}
