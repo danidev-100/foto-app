@@ -3,8 +3,9 @@ import { getOrders, cancelOrder, initiatePayment } from '../api/orders';
 
 const statusConfig = {
   pending: { label: 'Pendiente', className: 'badge bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800' },
-  ready: { label: 'Retirar', className: 'badge bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' },
-  delivered: { label: 'Entregado', className: 'badge bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 ring-1 ring-surface-200 dark:ring-surface-700' },
+  ready: { label: 'Listo', className: 'badge bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800' },
+  shipped: { label: 'Entregado', className: 'badge bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 ring-1 ring-violet-200 dark:ring-violet-800' },
+  delivered: { label: 'Retirado', className: 'badge bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' },
   cancelled: { label: 'Cancelado', className: 'badge bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800' },
 };
 
