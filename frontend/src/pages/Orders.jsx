@@ -45,8 +45,9 @@ export default function Orders() {
     setActionLoading(`pay-${id}`);
     try {
       const { data } = await initiatePayment(id, 'mercadopago');
-      if (data.data?.preference_url) {
-        window.location.href = data.data.preference_url;
+      const paymentUrl = data.data?.paymentUrl || data.data?.preference_url;
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
       }
     } finally {
       setActionLoading(null);

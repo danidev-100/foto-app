@@ -42,7 +42,7 @@ export default function Cart() {
       if (method === 'mercadopago') {
         // 2. Initiate payment to get MP redirect URL
         const payRes = await initiatePayment(orderId, 'mercadopago');
-        const paymentUrl = payRes.data.data.payment_url;
+        const paymentUrl = payRes.data.data.paymentUrl || payRes.data.data.payment_url;
 
         // 3. Redirect to Mercado Pago
         if (paymentUrl) {
@@ -56,6 +56,8 @@ export default function Cart() {
       }
     } catch (error) {
       console.error('Checkout failed:', error);
+      const msg = error?.response?.data?.error?.message || error.message || 'Error al procesar el pago';
+      alert(msg);
       setProcessing(false);
     }
   };
