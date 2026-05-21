@@ -236,16 +236,22 @@ export default function Admin() {
       cancelled: 'Cancelado',
     };
     return (
-      <select
-        value={status}
-        onChange={(e) => updateOrderStatus(orderId, e.target.value)}
-        className={`text-xs font-medium rounded-md px-2 py-1 border-0 cursor-pointer ${styles[status] || styles.pending}`}
-      >
-        <option value="pending">Pendiente</option>
-        <option value="ready">Listo</option>
-        <option value="delivered">Entregado</option>
-        <option value="cancelled">Cancelado</option>
-      </select>
+      <div className="relative inline-flex">
+        <select
+          value={status}
+          onChange={(e) => updateOrderStatus(orderId, e.target.value)}
+          className={`text-xs font-medium rounded-md pl-2 pr-6 py-1 border-0 cursor-pointer appearance-none ${styles[status] || styles.pending}`}
+          style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+        >
+          <option value="pending">Pendiente</option>
+          <option value="ready">Listo</option>
+          <option value="delivered">Entregado</option>
+          <option value="cancelled">Cancelado</option>
+        </select>
+        <svg className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
     );
   };
 
