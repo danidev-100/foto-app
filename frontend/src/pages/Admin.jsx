@@ -182,11 +182,10 @@ export default function Admin() {
   const advanceOrderStatus = async (orderId, currentStatus) => {
     const nextStatus =
       currentStatus === 'pending' ? 'ready' :
-      currentStatus === 'ready' ? 'shipped' :
       'delivered';
     try {
       await adminUpdateOrderStatus(orderId, { status: nextStatus });
-      const labels = { ready: 'Listo', shipped: 'Entregado', delivered: 'Retirado' };
+      const labels = { ready: 'Listo', delivered: 'Entregado' };
       showToast(`Pedido marcado como: ${labels[nextStatus]}`);
       // Update local state
       setOrders(prev => prev.map(od =>
@@ -207,8 +206,7 @@ export default function Admin() {
       const statusLabels = {
         pending: 'Pendiente',
         ready: 'Listo',
-        shipped: 'Entregado',
-        delivered: 'Retirado',
+        delivered: 'Entregado',
         cancelled: 'Cancelado',
       };
       showToast(`Estado cambiado a: ${statusLabels[newStatus]}`);
@@ -228,15 +226,13 @@ export default function Admin() {
     const styles = {
       pending: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800',
       ready: 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800',
-      shipped: 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 ring-1 ring-violet-200 dark:ring-violet-800',
       delivered: 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800',
       cancelled: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800',
     };
     const labels = {
       pending: 'Pendiente',
       ready: 'Listo',
-      shipped: 'Entregado',
-      delivered: 'Retirado',
+      delivered: 'Entregado',
       cancelled: 'Cancelado',
     };
     return (
@@ -247,8 +243,7 @@ export default function Admin() {
       >
         <option value="pending">Pendiente</option>
         <option value="ready">Listo</option>
-        <option value="shipped">Entregado</option>
-        <option value="delivered">Retirado</option>
+        <option value="delivered">Entregado</option>
         <option value="cancelled">Cancelado</option>
       </select>
     );
@@ -1036,19 +1031,11 @@ export default function Admin() {
                     <td className="px-5 py-3 text-right font-bold text-surface-900 dark:text-surface-100">{formatPrice(order.total)}</td>
                     <td className="px-5 py-3">
                       {order.status === 'delivered' ? (
-                        <span className="badge bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800">Retirado</span>
-                      ) : order.status === 'shipped' ? (
-                        <button
-                          onClick={() => advanceOrderStatus(order.id, 'shipped')}
-                          className="badge bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 ring-1 ring-violet-200 dark:ring-violet-800 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/30 hover:text-green-700 dark:hover:text-green-400 hover:ring-green-200 dark:hover:ring-green-800 transition-colors"
-                          title="Clic para marcar como retirado"
-                        >
-                          Entregado → Retirado
-                        </button>
+                        <span className="badge bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800">Entregado</span>
                       ) : order.status === 'ready' ? (
                         <button
                           onClick={() => advanceOrderStatus(order.id, 'ready')}
-                          className="badge bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800 cursor-pointer hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-700 dark:hover:text-violet-400 hover:ring-violet-200 dark:hover:ring-violet-800 transition-colors"
+                          className="badge bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/30 hover:text-green-700 dark:hover:text-green-400 hover:ring-green-200 dark:hover:ring-green-800 transition-colors"
                           title="Clic para marcar como entregado"
                         >
                           Listo → Entregado
