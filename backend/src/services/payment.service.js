@@ -67,7 +67,7 @@ export class PaymentService {
     const mpItems = items.map((item) => ({
       title: item.title,
       quantity: item.quantity,
-      unitPrice: Number(item.unitPrice),
+      unitPrice: Number(item.unitPrice) / 100,
       currencyId: 'ARS',
     }));
 

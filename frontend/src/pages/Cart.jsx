@@ -123,23 +123,23 @@ export default function Cart() {
 
               {/* Quantity controls */}
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => updateQty(item.booklet_id, item.quantity - 1)}
-                  disabled={updating === item.booklet_id}
+                  <button
+                    onClick={() => updateQty(item.bookletId, item.quantity - 1)}
+                    disabled={updating === item.bookletId}
                   className="w-8 h-8 rounded-lg bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600 flex items-center justify-center text-surface-600 dark:text-surface-300 transition-colors disabled:opacity-50"
                 >
                   −
                 </button>
                 <span className="w-8 text-center font-medium text-sm text-surface-900 dark:text-surface-100">{item.quantity}</span>
-                <button
-                  onClick={() => updateQty(item.booklet_id, item.quantity + 1)}
-                  disabled={updating === item.booklet_id}
+                  <button
+                    onClick={() => updateQty(item.bookletId, item.quantity + 1)}
+                    disabled={updating === item.bookletId}
                   className="w-8 h-8 rounded-lg bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600 flex items-center justify-center text-surface-600 dark:text-surface-300 transition-colors disabled:opacity-50"
                 >
                   +
                 </button>
                 <button
-                  onClick={() => remove(item.booklet_id)}
+                    onClick={() => remove(item.bookletId)}
                   className="ml-2 w-8 h-8 rounded-lg text-surface-400 dark:text-surface-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
