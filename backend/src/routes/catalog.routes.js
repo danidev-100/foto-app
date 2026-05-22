@@ -7,6 +7,7 @@ const router = Router();
 const catalog = new CatalogController();
 
 // Student-facing catalog (public)
+router.get('/schools', (req, res) => catalog.listSchools(req, res));
 router.get('/courses', (req, res) => catalog.listCourses(req, res));
 router.get('/courses/:id/divisions', (req, res) => catalog.listDivisionsByCourse(req, res));
 

@@ -5,6 +5,22 @@ const catalogService = new CatalogService();
 
 export class CatalogController {
   // Student-facing
+  async listSchools(_req, res) {
+    try {
+      const schools = await catalogService.listSchools();
+      const mapped = schools.map((s) => ({
+        id: s.id,
+        name: s.name,
+        shortName: s.shortName || s.name,
+        courses: s.courses.map((sc) => sc.course),
+      }));
+      return successJSON(res, 200, mapped);
+    } catch (err) {
+      console.error('ListSchools error:', err);
+      return errorJSON(res, 500, 'INF_001', 'failed to list schools');
+    }
+  }
+
   async listCourses(_req, res) {
     try {
       const courses = await catalogService.listCourses();

@@ -3,6 +3,27 @@ import { prisma } from '../lib/prisma.js';
 
 export class CatalogService {
   // Student-facing
+  async listSchools() {
+    return prisma.school.findMany({
+      where: { isActive: true },
+      include: {
+        courses: {
+          include: {
+            course: {
+              include: {
+                divisions: {
+                  where: { isActive: true },
+                  orderBy: { name: 'asc' },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async listCourses() {
     return prisma.course.findMany({
       where: { isActive: true },

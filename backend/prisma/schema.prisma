@@ -35,6 +35,30 @@ enum PaymentStatus {
 // Models
 // ============================================================================
 
+model School {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(255)
+  shortName String?  @map("short_name") @db.VarChar(100)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  courses   SchoolCourse[]
+
+  @@map("schools")
+}
+
+model SchoolCourse {
+  schoolId String @map("school_id")
+  courseId String @map("course_id")
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@id([schoolId, courseId])
+  @@map("school_courses")
+}
+
 model Course {
   id          String     @id @default(uuid())
   name        String     @db.VarChar(255)
@@ -46,6 +70,7 @@ model Course {
   divisions   Division[]
   booklets    Booklet[]
   students    Student[]
+  schools     SchoolCourse[]
 
   @@map("courses")
 }

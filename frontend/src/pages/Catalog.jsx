@@ -26,47 +26,62 @@ const LEVEL_ACCENTS = {
   },
 };
 
+const SCHOOL_THEMES = {
+  'Don Bosco': {
+    gradient: 'from-blue-600 to-indigo-700',
+    light: 'from-blue-50 to-indigo-50',
+    border: 'ring-blue-200',
+    icon: '🏫',
+  },
+  'Rodeo del Medio': {
+    gradient: 'from-amber-600 to-orange-700',
+    light: 'from-amber-50 to-orange-50',
+    border: 'ring-amber-200',
+    icon: '🎓',
+  },
+};
+
 function getLevelFromCourse(name) {
   if (name.startsWith('Primaria')) return 'primaria';
   if (name.startsWith('Secundaria')) return 'secundaria';
   return 'other';
 }
 
+function getSchoolTheme(name) {
+  if (name.includes('Don Bosco')) return SCHOOL_THEMES['Don Bosco'];
+  if (name.includes('Rodeo')) return SCHOOL_THEMES['Rodeo del Medio'];
+  return SCHOOL_THEMES['Don Bosco'];
+}
+
 export default function Catalog({ onCartUpdate }) {
-  const [courses, setCourses] = useState([]);
+  const [schools, setSchools] = useState([]);
+  const [selectedSchool, setSelectedSchool] = useState(null);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [booklets, setBooklets] = useState([]);
   const [loadingBooklets, setLoadingBooklets] = useState(false);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   const loadData = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/catalog/courses');
-      const raw = response.data.data || [];
-      const uniqueCourses = [...new Map(raw.map(c => [c.id, c])).values()];
-      setCourses(uniqueCourses);
+      const response = await api.get('/catalog/schools');
+      setSchools(response.data.data || []);
     } catch {
-      showToast('Error al cargar cursos', 'error');
+      showToast('Error al cargar datos', 'error');
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => { loadData(); }, []);
+
   const loadCourseBooklets = async (courseId) => {
-    console.log('Loading booklets for course:', courseId);
     setLoadingBooklets(true);
     try {
       const response = await api.get(`/catalog/booklets?course_id=${courseId}&per_page=100`);
-      console.log('Response data:', response.data);
       setBooklets(response.data.data || []);
-    } catch (error) {
-      console.error('Error loading booklets:', error);
+    } catch {
       showToast('Error al cargar cuadernillos', 'error');
       setBooklets([]);
     } finally {
@@ -74,10 +89,26 @@ export default function Catalog({ onCartUpdate }) {
     }
   };
 
+  const handleSelectSchool = (school) => {
+    setSelectedSchool(school);
+    setSelectedCourse(null);
+    setBooklets([]);
+  };
+
   const handleSelectCourse = async (course) => {
-    console.log('Selecting course:', course);
     setSelectedCourse(course);
     await loadCourseBooklets(course.id);
+  };
+
+  const handleBackToSchools = () => {
+    setSelectedSchool(null);
+    setSelectedCourse(null);
+    setBooklets([]);
+  };
+
+  const handleBackToCourses = () => {
+    setSelectedCourse(null);
+    setBooklets([]);
   };
 
   const showToast = (message, type = 'success') => {
@@ -98,11 +129,6 @@ export default function Catalog({ onCartUpdate }) {
     }
   };
 
-  const handleBack = () => {
-    setSelectedCourse(null);
-    setBooklets([]);
-  };
-
   const toNum = (val) => (val === null || val === undefined ? 0 : Number(val));
   const formatPrice = (cents) => `$${(toNum(cents) / 100).toLocaleString('es-AR')}`;
 
@@ -117,7 +143,7 @@ export default function Catalog({ onCartUpdate }) {
       <div className="flex items-center justify-center py-20">
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto" />
-          <p className="mt-3 text-surface-500 text-sm">Cargando cursos...</p>
+          <p className="mt-3 text-surface-500 text-sm">Cargando...</p>
         </div>
       </div>
     );
@@ -146,10 +172,9 @@ export default function Catalog({ onCartUpdate }) {
 
       {selectedCourse ? (
         <>
-          {/* Header con botón volver */}
           <div className="mb-8">
             <button
-              onClick={handleBack}
+              onClick={handleBackToCourses}
               className="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -163,7 +188,6 @@ export default function Catalog({ onCartUpdate }) {
             )}
           </div>
 
-          {/* Cuadernillos */}
           {loadingBooklets ? (
             <div className="flex items-center justify-center py-12">
               <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
@@ -186,14 +210,12 @@ export default function Catalog({ onCartUpdate }) {
                     className="bg-white rounded-2xl shadow-sm ring-1 ring-surface-200/60 hover:shadow-md hover:ring-primary-200 transition-all duration-200"
                   >
                     <div className="p-5 flex items-center gap-4">
-                      {/* Icon */}
                       <div className="hidden sm:flex w-12 h-12 rounded-xl bg-primary-50 items-center justify-center flex-shrink-0">
                         <svg className="w-6 h-6 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                         </svg>
                       </div>
 
-                      {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-4">
                           <div>
@@ -213,7 +235,6 @@ export default function Catalog({ onCartUpdate }) {
                         )}
                       </div>
 
-                      {/* Acción */}
                       <div className="flex-shrink-0">
                         <button
                           onClick={() => handleAdd(b)}
@@ -232,32 +253,41 @@ export default function Catalog({ onCartUpdate }) {
             </div>
           )}
         </>
-      ) : (
+      ) : selectedSchool ? (
         <>
-          <div className="mb-10">
-            <h1 className="text-3xl font-bold text-surface-900">Cursos disponibles</h1>
-            <p className="mt-2 text-surface-500">Elegí un curso para ver sus cuadernillos.</p>
+          <div className="mb-8">
+            <button
+              onClick={handleBackToSchools}
+              className="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Volver a colegios
+            </button>
+            <h1 className="text-2xl font-bold text-surface-900 mt-3">{selectedSchool.name}</h1>
           </div>
 
-          {courses.length === 0 ? (
+          {selectedSchool.courses.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-2xl shadow-sm ring-1 ring-surface-200/60">
               <svg className="w-16 h-16 text-surface-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
               <h3 className="text-lg font-semibold text-surface-900">No hay cursos disponibles</h3>
-              <p className="mt-1 text-surface-500">Aún no se cargaron cursos.</p>
+              <p className="mt-1 text-surface-500">Aún no se cargaron cursos para este colegio.</p>
             </div>
           ) : (
             <div className="space-y-12">
               {LEVELS.map((level) => {
-                const levelCourses = courses.filter(c => getLevelFromCourse(c.name) === level.key);
+                const levelCourses = selectedSchool.courses.filter(
+                  (c) => getLevelFromCourse(c.name) === level.key
+                );
                 if (levelCourses.length === 0) return null;
 
                 const accent = LEVEL_ACCENTS[level.key];
 
                 return (
                   <section key={level.key}>
-                    {/* Level header */}
                     <div className="flex items-center gap-4 mb-6">
                       <div className={`flex items-center justify-center w-12 h-12 rounded-2xl ${accent.iconBg} ${accent.iconColor}`}>
                         <span className="text-xl">{level.icon}</span>
@@ -270,7 +300,6 @@ export default function Catalog({ onCartUpdate }) {
                       </div>
                     </div>
 
-                    {/* Courses grid */}
                     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                       {levelCourses.map((course) => (
                         <div
@@ -286,12 +315,10 @@ export default function Catalog({ onCartUpdate }) {
                             }
                           }}
                         >
-                          {/* Top accent bar */}
                           <div className={`h-2 bg-gradient-to-r ${accent.gradient}`} />
 
                           <div className="p-5">
                             <div className="flex items-start gap-4">
-                              {/* Icon */}
                               <div className={`flex-shrink-0 w-12 h-12 rounded-xl ${accent.iconBg} ${accent.iconColor} flex items-center justify-center`}>
                                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -310,6 +337,86 @@ export default function Catalog({ onCartUpdate }) {
                       ))}
                     </div>
                   </section>
+                );
+              })}
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="mb-10">
+            <h1 className="text-3xl font-bold text-surface-900">Colegios</h1>
+            <p className="mt-2 text-surface-500">Elegí un colegio para ver sus cursos.</p>
+          </div>
+
+          {schools.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-2xl shadow-sm ring-1 ring-surface-200/60">
+              <svg className="w-16 h-16 text-surface-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              <h3 className="text-lg font-semibold text-surface-900">No hay colegios disponibles</h3>
+              <p className="mt-1 text-surface-500">Aún no se cargaron colegios.</p>
+            </div>
+          ) : (
+            <div className="grid gap-8 md:grid-cols-2">
+              {schools.map((school) => {
+                const theme = getSchoolTheme(school.name);
+                return (
+                  <div
+                    key={school.id}
+                    role="button"
+                    tabIndex={0}
+                    className={`relative bg-gradient-to-br ${theme.light} rounded-3xl shadow-md ring-1 ${theme.border} cursor-pointer hover:shadow-xl transition-all duration-300 select-none overflow-hidden group`}
+                    onClick={() => handleSelectSchool(school)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleSelectSchool(school);
+                      }
+                    }}
+                  >
+                    <div className={`h-2 bg-gradient-to-r ${theme.gradient}`} />
+                    <div className="p-8">
+                      <div className="flex items-center gap-5">
+                        <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/80 backdrop-blur-sm shadow-sm flex items-center justify-center text-3xl">
+                          {theme.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h2 className="text-2xl font-bold text-surface-900">{school.name}</h2>
+                          <p className="mt-1.5 text-surface-600 font-medium">
+                            {school.courses.length} {school.courses.length === 1 ? 'curso' : 'cursos'}
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/60 backdrop-blur-sm flex items-center justify-center group-hover:translate-x-1 transition-transform">
+                          <svg className="w-5 h-5 text-surface-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 flex flex-wrap gap-2">
+                        {LEVELS.map((level) => {
+                          const count = school.courses.filter(
+                            (c) => getLevelFromCourse(c.name) === level.key
+                          ).length;
+                          if (count === 0) return null;
+                          return (
+                            <span
+                              key={level.key}
+                              className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${
+                                level.key === 'primaria'
+                                  ? 'bg-emerald-100 text-emerald-700'
+                                  : 'bg-sky-100 text-sky-700'
+                              }`}
+                            >
+                              <span>{level.icon}</span>
+                              {level.label} ({count})
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
             </div>
