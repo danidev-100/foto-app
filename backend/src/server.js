@@ -10,16 +10,16 @@ import { prisma } from './lib/prisma.js';
 
 // ── Sync DB schema on startup ──────────────────────────────────────
 // Vercel services mode doesn't run vercel-build, so we push schema here.
-// Idempotent — only creates/updates missing tables.
+// Use prisma binary directly (not npx) since npx can't write to /tmp.
 try {
   const __dirname = dirname(fileURLToPath(import.meta.url));
-  execSync('npx prisma db push --accept-data-loss --skip-generate', {
-    cwd: __dirname + '/..',
-    stdio: 'pipe',
-  });
+  const basedir = __dirname + '/..';
+  execSync(
+    `node "${basedir}/node_modules/prisma/build/index.js" db push --accept-data-loss --skip-generate`,
+    { cwd: basedir, stdio: 'pipe', env: { ...process.env, HOME: '/tmp' } },
+  );
   console.log('Schema synced via prisma db push');
 } catch (err) {
-  // Non-fatal — schema may have been pushed already or DB not reachable
   console.warn('prisma db push warning (non-fatal):', err.message);
 }
 
