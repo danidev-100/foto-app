@@ -9,19 +9,33 @@ import { initPaymentService } from './controllers/payment.controller.js';
 import { prisma } from './lib/prisma.js';
 
 // ── Sync DB schema on startup ──────────────────────────────────────
-// Vercel services mode doesn't run vercel-build, so we push schema here.
-// Use prisma binary directly (not npx) since npx can't write to /tmp.
-try {
-  const __dirname = dirname(fileURLToPath(import.meta.url));
-  const basedir = __dirname + '/..';
-  execSync(
-    `node "${basedir}/node_modules/prisma/build/index.js" db push --accept-data-loss --skip-generate`,
-    { cwd: basedir, stdio: 'pipe', env: { ...process.env, HOME: '/tmp' } },
-  );
-  console.log('Schema synced via prisma db push');
-} catch (err) {
-  console.warn('prisma db push warning (non-fatal):', err.message);
+// Vercel services mode doesn't run vercel-build, so we CREATE missing tables here.
+// schools + school_courses may not exist yet in production.
+async function ensureSchoolsTable() {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS schools (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name VARCHAR(255) NOT NULL,
+        short_name VARCHAR(100),
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS school_courses (
+        school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+        course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+        PRIMARY KEY (school_id, course_id)
+      );
+    `);
+    console.log('Ensured schools + school_courses tables exist');
+  } catch (err) {
+    console.warn('Could not ensure schools table (non-fatal):', err.message);
+  }
 }
+ensureSchoolsTable();
 
 // ── Initialize Mercado Pago gateway ────────────────────────────────
 const mpGateway = new MercadoPagoGateway(config.mpAccessToken, config.mpSandbox);
