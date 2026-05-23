@@ -8,19 +8,20 @@ import { prisma } from './lib/prisma.js';
 // Vercel services mode doesn't run vercel-build, so tables may not exist.
 async function ensureSchools() {
   try {
-    // Check if schools table already has the right schema
-    const exists = await prisma.$queryRawUnsafe(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables
-        WHERE table_name = 'schools'
-      ) AS exists
-    `);
-    if (exists[0]?.exists) {
-      // Table exists — just seed if empty, skip DROP/CREATE
-      const count = await prisma.school.count();
-      if (count > 0) return; // already seeded
-    } else {
-      // Create fresh tables
+    // Check which tables exist
+    const [schoolsExist, scExist] = await Promise.all([
+      prisma.$queryRawUnsafe(
+        `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'schools') AS e`
+      ),
+      prisma.$queryRawUnsafe(
+        `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'school_courses') AS e`
+      ),
+    ]);
+    const hasSchools = schoolsExist[0]?.e;
+    const hasSC = scExist[0]?.e;
+
+    // Create missing tables
+    if (!hasSchools) {
       await prisma.$executeRawUnsafe(`
         CREATE TABLE schools (
           id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -31,6 +32,9 @@ async function ensureSchools() {
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
       `);
+      console.log('Created schools table');
+    }
+    if (!hasSC) {
       await prisma.$executeRawUnsafe(`
         CREATE TABLE school_courses (
           school_id TEXT NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
@@ -38,7 +42,7 @@ async function ensureSchools() {
           PRIMARY KEY (school_id, course_id)
         );
       `);
-      console.log('Created schools + school_courses tables');
+      console.log('Created school_courses table');
     }
 
     // Seed schools if empty
@@ -64,6 +68,22 @@ async function ensureSchools() {
         }
       }
       console.log(`Seeded ${courses.length} courses into both schools`);
+    } else if (!hasSC) {
+      // Schools exist but school_courses was created later — re-link
+      const schools = await prisma.school.findMany();
+      const courses = await prisma.course.findMany({ where: { isActive: true } });
+      for (const school of schools) {
+        for (const course of courses) {
+          try {
+            await prisma.schoolCourse.create({
+              data: { schoolId: school.id, courseId: course.id },
+            });
+          } catch {
+            // ignore duplicate links
+          }
+        }
+      }
+      console.log(`Re-linked courses to ${schools.length} schools`);
     }
   } catch (err) {
     console.warn('ensureSchools skipped (non-fatal):', err.message);
