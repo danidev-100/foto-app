@@ -481,6 +481,11 @@ export default function Admin() {
     : null;
   const schoolHasNoCourses = selectedSchoolData && (!selectedSchoolData.courses || selectedSchoolData.courses.length === 0);
 
+  // Filter booklets by selected school
+  const filteredBooklets = selectedSchoolId
+    ? booklets.filter(b => b.school?.id === selectedSchoolId)
+    : booklets;
+
   // Group orders by school
   const groupedOrders = orders.reduce((acc, od) => {
     const schools = od.order.student?.course?.schools || [];
@@ -735,7 +740,7 @@ export default function Admin() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
-              {booklets.map((b) => {
+              {filteredBooklets.map((b) => {
                 const course = courses.find((c) => c.id === b.courseId);
                 const division = divisions.find((d) => d.id === b.divisionId);
                 const divNames = getDivisionsFromDesc(b.description);
@@ -801,8 +806,10 @@ export default function Admin() {
               })}
             </tbody>
           </table>
-          {booklets.length === 0 && (
-            <div className="text-center py-8 text-surface-500 dark:text-surface-400">No hay cuadernillos creados.</div>
+          {filteredBooklets.length === 0 && (
+            <div className="text-center py-8 text-surface-500 dark:text-surface-400">
+              {selectedSchoolId ? 'No hay cuadernillos para este colegio.' : 'No hay cuadernillos creados.'}
+            </div>
           )}
         </div>
       </div>
