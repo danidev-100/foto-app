@@ -62,6 +62,51 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/webhooks', webhookRoutes);
 
+// ── TEMPORARY: seed schools in production ──────────────────────────
+// TODO: remove after first successful run
+import { authMiddleware, adminMiddleware } from './middleware/auth.js';
+app.post('/api/admin/seed-schools', authMiddleware, adminMiddleware, async (_req, res) => {
+  try {
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+    const results = [];
+
+    const schoolData = [
+      { name: 'Colegio Don Bosco', shortName: 'Don Bosco' },
+      { name: 'Instituto Rodeo del Medio', shortName: 'Rodeo del Medio' },
+    ];
+
+    for (const s of schoolData) {
+      const existing = await prisma.school.findFirst({ where: { name: s.name } });
+      if (existing) {
+        results.push({ school: s.name, status: 'already exists', id: existing.id });
+      } else {
+        const created = await prisma.school.create({ data: s });
+        results.push({ school: created.name, status: 'created', id: created.id });
+      }
+    }
+
+    const courses = await prisma.course.findMany({ where: { isActive: true } });
+    let linked = 0;
+    for (const schoolId of results.map(r => r.id)) {
+      for (const course of courses) {
+        const exists = await prisma.schoolCourse.findUnique({
+          where: { schoolId_courseId: { schoolId, courseId: course.id } },
+        });
+        if (!exists) {
+          await prisma.schoolCourse.create({ data: { schoolId, courseId: course.id } });
+          linked++;
+        }
+      }
+    }
+
+    await prisma.$disconnect();
+    res.json({ success: true, schools: results, coursesLinked: linked });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ── Error handler ──────────────────────────────────────────────────
 app.use(errorMiddleware);
 
