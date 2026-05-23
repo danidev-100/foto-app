@@ -1,17 +1,12 @@
-import { execSync } from 'child_process';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
-
 import app from './app.js';
 import { config } from './config.js';
 import { MercadoPagoGateway } from './lib/mercadopago.js';
 import { initPaymentService } from './controllers/payment.controller.js';
 import { prisma } from './lib/prisma.js';
 
-// ── Sync DB schema on startup ──────────────────────────────────────
-// Vercel services mode doesn't run vercel-build, so we CREATE missing tables here.
-// schools + school_courses may not exist yet in production.
-async function ensureSchoolsTable() {
+// ── Ensure schools exist (create tables + seed data) ──────────────
+// Vercel services mode doesn't run vercel-build, so tables may not exist.
+async function ensureSchools() {
   try {
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS schools (
@@ -32,10 +27,36 @@ async function ensureSchoolsTable() {
     `);
     console.log('Ensured schools + school_courses tables exist');
   } catch (err) {
-    console.warn('Could not ensure schools table (non-fatal):', err.message);
+    console.warn('Could not ensure schools tables (non-fatal):', err.message);
+    return;
+  }
+
+  // Seed schools if empty
+  try {
+    const count = await prisma.school.count();
+    if (count === 0) {
+      const donBosco = await prisma.school.create({
+        data: { name: 'Colegio Don Bosco', shortName: 'Don Bosco' },
+      });
+      const rodeo = await prisma.school.create({
+        data: { name: 'Instituto Rodeo del Medio', shortName: 'Rodeo del Medio' },
+      });
+      const courses = await prisma.course.findMany({ where: { isActive: true } });
+      for (const course of courses) {
+        await prisma.schoolCourse.createMany({
+          data: [
+            { schoolId: donBosco.id, courseId: course.id },
+            { schoolId: rodeo.id, courseId: course.id },
+          ],
+        });
+      }
+      console.log(`Seeded ${courses.length} courses into both schools`);
+    }
+  } catch (err) {
+    console.warn('Could not seed schools (non-fatal):', err.message);
   }
 }
-ensureSchoolsTable();
+ensureSchools();
 
 // ── Initialize Mercado Pago gateway ────────────────────────────────
 const mpGateway = new MercadoPagoGateway(config.mpAccessToken, config.mpSandbox);
