@@ -8,9 +8,12 @@ import { prisma } from './lib/prisma.js';
 // Vercel services mode doesn't run vercel-build, so tables may not exist.
 async function ensureSchools() {
   try {
+    // Drop old schema (UUID type) first, recreate with TEXT to match Prisma types
+    await prisma.$executeRawUnsafe(`DROP TABLE IF EXISTS school_courses;`);
+    await prisma.$executeRawUnsafe(`DROP TABLE IF EXISTS schools;`);
     await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS schools (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      CREATE TABLE schools (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
         name VARCHAR(255) NOT NULL,
         short_name VARCHAR(100),
         is_active BOOLEAN NOT NULL DEFAULT true,
@@ -19,9 +22,9 @@ async function ensureSchools() {
       );
     `);
     await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS school_courses (
-        school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
-        course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+      CREATE TABLE school_courses (
+        school_id TEXT NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+        course_id TEXT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
         PRIMARY KEY (school_id, course_id)
       );
     `);
