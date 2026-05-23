@@ -170,11 +170,11 @@ export class CatalogController {
   }
 
   async createBooklet(req, res) {
-    const { course_id: courseId, division_id: divisionId, title, description, current_price: currentPrice, stock, image_url: imageUrl, is_active: isActive } = req.body;
-    if (!title || !courseId || !divisionId) return errorJSON(res, 400, 'AUTH_004', 'title, course_id, and division_id are required');
+    const { school_id: schoolId, course_id: courseId, division_id: divisionId, title, description, current_price: currentPrice, stock, image_url: imageUrl, is_active: isActive } = req.body;
+    if (!title || !courseId || !divisionId || !schoolId) return errorJSON(res, 400, 'AUTH_004', 'school_id, title, course_id, and division_id are required');
     try {
       const booklet = await catalogService.createBooklet({
-        courseId, divisionId, title, description, currentPrice, stock, imageUrl, isActive,
+        schoolId, courseId, divisionId, title, description, currentPrice, stock, imageUrl, isActive,
       });
       return successJSON(res, 201, booklet);
     } catch (err) {

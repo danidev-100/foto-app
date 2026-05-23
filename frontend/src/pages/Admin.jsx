@@ -418,6 +418,7 @@ export default function Admin() {
         : `Divisiones: ${allDivNames}`;
 
       const payload = {
+        school_id: selectedSchoolId,
         course_id: matchedCourseId,
         division_id: firstDiv[1],
         title: bookletForm.title,
@@ -751,12 +752,11 @@ export default function Admin() {
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex flex-wrap gap-1">
-                        {(b.course?.schools || []).map(sc => (
-                          <span key={sc.school.id} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-200 dark:ring-primary-800">
-                            {sc.school.shortName || sc.school.name}
+                        {b.school ? (
+                          <span key={b.school.id} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-200 dark:ring-primary-800">
+                            {b.school.shortName || b.school.name}
                           </span>
-                        ))}
-                        {(!b.course?.schools || b.course.schools.length === 0) && (
+                        ) : (
                           <span className="text-xs text-surface-400">—</span>
                         )}
                       </div>

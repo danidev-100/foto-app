@@ -176,6 +176,7 @@ export class CatalogService {
         skip: (page - 1) * limit,
         take: limit,
         include: {
+          school: true,
           course: {
             include: {
               schools: { include: { school: true } },
@@ -189,7 +190,7 @@ export class CatalogService {
     return { booklets, total, page, limit };
   }
 
-  async createBooklet({ courseId, divisionId, title, description, currentPrice, stock = 0, imageUrl, isActive = true }) {
+  async createBooklet({ schoolId, courseId, divisionId, title, description, currentPrice, stock = 0, imageUrl, isActive = true }) {
     if (currentPrice < 0) {
       const err = new Error('price must be non-negative');
       err.code = 'CAT_005';
@@ -216,7 +217,7 @@ export class CatalogService {
     }
 
     return prisma.booklet.create({
-      data: { courseId, divisionId, title, description, currentPrice, stock, imageUrl, isActive },
+      data: { schoolId, courseId, divisionId, title, description, currentPrice, stock, imageUrl, isActive },
     });
   }
 
