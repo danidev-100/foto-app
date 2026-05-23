@@ -8,16 +8,14 @@ export class CatalogService {
       where: { isActive: true },
       include: {
         courses: {
+          where: { isActive: true },
           include: {
-            course: {
-              include: {
-                divisions: {
-                  where: { isActive: true },
-                  orderBy: { name: 'asc' },
-                },
-              },
+            divisions: {
+              where: { isActive: true },
+              orderBy: { name: 'asc' },
             },
           },
+          orderBy: { name: 'asc' },
         },
       },
       orderBy: { name: 'asc' },
@@ -177,11 +175,7 @@ export class CatalogService {
         take: limit,
         include: {
           school: true,
-          course: {
-            include: {
-              schools: { include: { school: true } },
-            },
-          },
+          course: true,
         },
       }),
       prisma.booklet.count({ where }),

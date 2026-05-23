@@ -488,8 +488,7 @@ export default function Admin() {
 
   // Group orders by school
   const groupedOrders = orders.reduce((acc, od) => {
-    const schools = od.order.student?.course?.schools || [];
-    const schoolName = schools[0]?.school?.name || 'Sin colegio';
+    const schoolName = od.order.student?.course?.school?.name || 'Sin colegio';
     if (!acc[schoolName]) acc[schoolName] = [];
     acc[schoolName].push(od);
     return acc;
@@ -1092,7 +1091,7 @@ export default function Admin() {
                           const order = orderData.order;
                           const items = orderData.items || [];
                           const studentName = studentNames[order.studentId] || '—';
-                          const orderSchools = order.student?.course?.schools || [];
+                          const courseSchool = order.student?.course?.school;
                           return (
                             <tr key={order.id} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
                               <td className="px-5 py-3">
@@ -1104,12 +1103,11 @@ export default function Admin() {
                               <td className="px-5 py-3 text-surface-700 dark:text-surface-300">{studentName}</td>
                               <td className="px-5 py-3">
                                 <div className="flex flex-wrap gap-1">
-                                  {orderSchools.map(sc => (
-                                    <span key={sc.school.id} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-200 dark:ring-primary-800">
-                                      {sc.school.shortName || sc.school.name}
+                                  {courseSchool ? (
+                                    <span key={courseSchool.id} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-200 dark:ring-primary-800">
+                                      {courseSchool.shortName || courseSchool.name}
                                     </span>
-                                  ))}
-                                  {orderSchools.length === 0 && (
+                                  ) : (
                                     <span className="text-xs text-surface-400">—</span>
                                   )}
                                 </div>

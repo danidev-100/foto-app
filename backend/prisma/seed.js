@@ -24,25 +24,19 @@ async function main() {
     }
   }
 
-  // Get all active courses
-  const courses = await prisma.course.findMany({ where: { isActive: true } });
-  console.log(`Found ${courses.length} active courses`);
+  // Get all active courses without a school
+  const courses = await prisma.course.findMany({ where: { schoolId: null, isActive: true } });
+  console.log(`Found ${courses.length} courses without a school`);
 
-  // Link all courses to both schools
-  let linked = 0;
-  for (const schoolId of schoolIds) {
-    for (const course of courses) {
-      const exists = await prisma.schoolCourse.findUnique({
-        where: { schoolId_courseId: { schoolId, courseId: course.id } },
-      });
-      if (!exists) {
-        await prisma.schoolCourse.create({ data: { schoolId, courseId: course.id } });
-        linked++;
-      }
-    }
+  // Assign unassigned courses to the first school
+  if (courses.length > 0 && schoolIds.length > 0) {
+    await prisma.course.updateMany({
+      where: { id: { in: courses.map(c => c.id) } },
+      data: { schoolId: schoolIds[0] },
+    });
+    console.log(`Assigned ${courses.length} courses to first school`);
   }
 
-  console.log(`Created ${linked} new school-course links`);
   console.log('Seed complete!');
 }
 

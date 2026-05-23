@@ -12,7 +12,7 @@ export class CatalogController {
         id: s.id,
         name: s.name,
         shortName: s.shortName || s.name,
-        courses: s.courses.map((sc) => sc.course),
+        courses: s.courses,
       }));
       return successJSON(res, 200, mapped);
     } catch (err) {
