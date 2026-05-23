@@ -12,6 +12,9 @@ const catalog = new CatalogController();
 const userController = new UserController();
 const orderController = new OrderController();
 
+// Schools
+router.get('/schools', (req, res) => catalog.listSchools(req, res));
+
 // Courses
 router.get('/courses', (req, res) => catalog.listCoursesAdmin(req, res));
 router.post('/courses', (req, res) => catalog.createCourse(req, res));

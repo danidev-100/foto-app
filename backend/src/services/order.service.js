@@ -251,7 +251,17 @@ export class OrderService {
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
-        include: { student: { select: { id: true, name: true } } },
+        include: {
+          student: {
+            include: {
+              course: {
+                include: {
+                  schools: { include: { school: true } },
+                },
+              },
+            },
+          },
+        },
       }),
       prisma.order.count({ where }),
     ]);
@@ -316,7 +326,17 @@ export class OrderService {
     const pattern = `${idPrefix}%`;
     const order = await prisma.order.findFirst({
       where: { id: { startsWith: idPrefix } },
-      include: { student: { select: { name: true } } },
+      include: {
+        student: {
+          include: {
+            course: {
+              include: {
+                schools: { include: { school: true } },
+              },
+            },
+          },
+        },
+      },
     });
     if (!order) return null;
 
@@ -337,7 +357,17 @@ export class OrderService {
     const orders = await prisma.order.findMany({
       where: { student: { name: { contains: name, mode: 'insensitive' } } },
       orderBy: { createdAt: 'desc' },
-      include: { student: { select: { id: true, name: true } } },
+      include: {
+        student: {
+          include: {
+            course: {
+              include: {
+                schools: { include: { school: true } },
+              },
+            },
+          },
+        },
+      },
     });
 
     const orderIds = orders.map((o) => o.id);
@@ -365,7 +395,19 @@ export class OrderService {
     const orders = await prisma.orderItem.findMany({
       where: { title: { contains: title, mode: 'insensitive' } },
       include: {
-        order: { include: { student: { select: { name: true, id: true } } } },
+        order: {
+          include: {
+            student: {
+              include: {
+                course: {
+                  include: {
+                    schools: { include: { school: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });

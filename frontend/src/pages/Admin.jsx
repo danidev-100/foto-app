@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  adminGetCourses, adminGetDivisions,
+  adminGetCourses, adminGetDivisions, adminGetSchools,
   adminGetBooklets, adminCreateBooklet, adminUpdateBooklet, adminDeleteBooklet,
   adminGetOrders, adminUpdateOrderStatus,
   adminSearchOrderByID, adminSearchOrdersByStudentName, adminSearchOrdersByBookletTitle,
@@ -44,6 +44,8 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState('booklets');
   const [courses, setCourses] = useState([]);
   const [divisions, setDivisions] = useState([]);
+  const [schools, setSchools] = useState([]);
+  const [selectedSchoolId, setSelectedSchoolId] = useState('');
   const [booklets, setBooklets] = useState([]);
   const [orders, setOrders] = useState([]);
   const [studentNames, setStudentNames] = useState({});
@@ -86,14 +88,16 @@ export default function Admin() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [cRes, dRes, bRes] = await Promise.all([
+      const [cRes, dRes, bRes, sRes] = await Promise.all([
         adminGetCourses(),
         adminGetDivisions(),
         adminGetBooklets(),
+        adminGetSchools(),
       ]);
       setCourses(cRes.data.data || []);
       setDivisions(dRes.data.data || []);
       setBooklets(bRes.data.data || []);
+      setSchools(sRes.data.data || []);
     } catch {
       showToast('Error al cargar datos', 'error');
     } finally {
@@ -469,6 +473,22 @@ export default function Admin() {
       : COURSE_STRUCTURE[selLevel].divisions)
     : [];
 
+  // School-aware course filtering
+  const selectedSchoolData = schools.find(s => s.id === selectedSchoolId);
+  const schoolCourseNames = selectedSchoolData
+    ? new Set((selectedSchoolData.courses || []).map(c => c.name))
+    : null;
+  const schoolHasNoCourses = selectedSchoolData && (!selectedSchoolData.courses || selectedSchoolData.courses.length === 0);
+
+  // Group orders by school
+  const groupedOrders = orders.reduce((acc, od) => {
+    const schools = od.order.student?.course?.schools || [];
+    const schoolName = schools[0]?.school?.name || 'Sin colegio';
+    if (!acc[schoolName]) acc[schoolName] = [];
+    acc[schoolName].push(od);
+    return acc;
+  }, {});
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -542,19 +562,41 @@ export default function Admin() {
           </h3>
 
           {/* Structured course selector */}
-          <div className="grid gap-4 sm:grid-cols-3 mb-4 p-4 bg-surface-50 dark:bg-surface-800/50 rounded-xl">
+          <div className="grid gap-4 sm:grid-cols-4 mb-4 p-4 bg-surface-50 dark:bg-surface-800/50 rounded-xl">
+            <div>
+              <label className="label-field">Colegio</label>
+              <select
+                value={selectedSchoolId}
+                onChange={(e) => { setSelectedSchoolId(e.target.value); setSelLevel(''); setSelGrade(''); setSelDivisions([]); setErrors(prev => ({ ...prev, selLevel: '' })); }}
+                className="input-field mt-1.5"
+                disabled={!!editingBooklet}
+              >
+                <option value="">Seleccioná colegio</option>
+                {schools.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="label-field">Nivel</label>
               <select
                 value={selLevel}
                 onChange={(e) => { setSelLevel(e.target.value); setSelGrade(''); setErrors(prev => ({ ...prev, selLevel: '' })); }}
                 className={`input-field mt-1.5 ${errors.selLevel ? 'border-red-400 ring-1 ring-red-400' : ''}`}
-                disabled={!!editingBooklet}
+                disabled={!!editingBooklet || schoolHasNoCourses}
               >
                 <option value="">Seleccioná nivel</option>
-                {Object.entries(COURSE_STRUCTURE).map(([key, data]) => (
-                  <option key={key} value={key}>{data.label}</option>
-                ))}
+                {schoolCourseNames
+                  ? Object.entries(COURSE_STRUCTURE)
+                      .filter(([key, data]) => data.grades.some(g => schoolCourseNames.has(`${data.label} - ${g.label}`)))
+                      .map(([key, data]) => (
+                        <option key={key} value={key}>{data.label}</option>
+                      ))
+                  : Object.entries(COURSE_STRUCTURE).map(([key, data]) => (
+                      <option key={key} value={key}>{data.label}</option>
+                    ))
+                }
+                {schoolHasNoCourses && <option value="" disabled>Sin cursos disponibles</option>}
               </select>
               {errors.selLevel && <p className="text-xs text-red-500 mt-1">{errors.selLevel}</p>}
             </div>
@@ -564,10 +606,15 @@ export default function Admin() {
                 value={selGrade}
                 onChange={(e) => { setSelGrade(e.target.value); setErrors(prev => ({ ...prev, selGrade: '' })); }}
                 className={`input-field mt-1.5 ${errors.selGrade ? 'border-red-400 ring-1 ring-red-400' : ''}`}
-                disabled={!selLevel || !!editingBooklet}
+                disabled={!selLevel || !!editingBooklet || schoolHasNoCourses}
               >
                 <option value="">Seleccioná grado</option>
-                {selLevel && COURSE_STRUCTURE[selLevel].grades.map((g) => (
+                {selLevel && (schoolCourseNames
+                  ? COURSE_STRUCTURE[selLevel].grades.filter(g =>
+                      schoolCourseNames.has(`${COURSE_STRUCTURE[selLevel].label} - ${g.label}`)
+                    )
+                  : COURSE_STRUCTURE[selLevel].grades
+                ).map((g) => (
                   <option key={g.value} value={g.value}>{g.label}</option>
                 ))}
               </select>
@@ -680,6 +727,7 @@ export default function Admin() {
               <tr>
                 <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Título</th>
                 <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Curso / División</th>
+                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Colegio</th>
                 <th className="text-right px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Precio</th>
                 <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Estado</th>
                 <th className="text-right px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Acciones</th>
@@ -700,6 +748,18 @@ export default function Admin() {
                           {divNames}
                         </span>
                       )}
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {(b.course?.schools || []).map(sc => (
+                          <span key={sc.school.id} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-200 dark:ring-primary-800">
+                            {sc.school.shortName || sc.school.name}
+                          </span>
+                        ))}
+                        {(!b.course?.schools || b.course.schools.length === 0) && (
+                          <span className="text-xs text-surface-400">—</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-3 text-right font-medium text-surface-900 dark:text-surface-100">{formatPrice(b.currentPrice)}</td>
                     <td className="px-5 py-3">
@@ -995,76 +1055,100 @@ export default function Admin() {
             </div>
           )}
 
-          {/* All Orders Table */}
+          {/* All Orders Table — grouped by school */}
           <div className="card overflow-hidden">
             <div className="px-5 py-3 bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
               <h4 className="font-semibold text-surface-900 dark:text-surface-100 text-sm">Todos los Pedidos</h4>
             </div>
-            <table className="w-full text-sm">
-            <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
-              <tr>
-                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Pedido</th>
-                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Usuario</th>
-                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Cuadernillos</th>
-                <th className="text-right px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Total</th>
-                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Estado</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
-              {orders.map((orderData) => {
-                const order = orderData.order;
-                const items = orderData.items || [];
-                    const studentName = studentNames[order.studentId] || '—';
-                return (
-                  <tr key={order.id} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
-                    <td className="px-5 py-3">
-                      <span className="font-medium text-surface-900 dark:text-surface-100">#{order.id.slice(0, 8)}</span>
-                      <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
-                        {new Date(order.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </p>
-                    </td>
-                    <td className="px-5 py-3 text-surface-700 dark:text-surface-300">{studentName}</td>
-                    <td className="px-5 py-3">
-                      <div className="space-y-1">
-                        {items.map((item) => (
-                          <div key={item.id} className="flex items-center gap-2 text-surface-600 dark:text-surface-400">
-                            <span className="text-xs bg-surface-100 dark:bg-surface-700 px-1.5 py-0.5 rounded">{item.quantity}x</span>
-                            <span className="text-sm">{item.title}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-5 py-3 text-right font-bold text-surface-900 dark:text-surface-100">{formatPrice(order.total)}</td>
-                    <td className="px-5 py-3">
-                      {order.status === 'delivered' ? (
-                        <span className="badge bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 ring-1 ring-green-400 dark:ring-green-700">Entregado</span>
-                      ) : order.status === 'ready' ? (
-                        <button
-                          onClick={() => advanceOrderStatus(order.id, 'ready')}
-                          className="badge bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 ring-1 ring-blue-400 dark:ring-blue-700 cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/50 hover:text-green-800 dark:hover:text-green-300 hover:ring-green-400 dark:hover:ring-green-700 transition-colors"
-                          title="Clic para marcar como entregado"
-                        >
-                          Listo → Entregado
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => advanceOrderStatus(order.id, 'pending')}
-                          className="badge bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 ring-1 ring-amber-400 dark:ring-amber-700 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:text-blue-800 dark:hover:text-blue-300 hover:ring-blue-400 dark:hover:ring-blue-700 transition-colors"
-                          title="Clic para marcar como listo"
-                        >
-                          Pendiente → Listo
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {orders.length === 0 && (
-            <div className="text-center py-8 text-surface-500 dark:text-surface-400">No hay pedidos.</div>
-          )}
-        </div>
+            {orders.length === 0 ? (
+              <div className="text-center py-8 text-surface-500 dark:text-surface-400">No hay pedidos.</div>
+            ) : (
+              <div className="divide-y divide-surface-100 dark:divide-surface-700">
+                {Object.entries(groupedOrders).map(([schoolName, schoolOrders]) => (
+                  <details key={schoolName} open className="group">
+                    <summary className="px-5 py-3 bg-surface-50 dark:bg-surface-800/50 cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-700/50 font-medium text-surface-800 dark:text-surface-200 text-sm flex items-center gap-2 sticky top-0">
+                      {schoolName} ({schoolOrders.length} pedido{schoolOrders.length !== 1 ? 's' : ''})
+                    </summary>
+                    <table className="w-full text-sm">
+                      <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
+                        <tr>
+                          <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Pedido</th>
+                          <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Usuario</th>
+                          <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Colegio</th>
+                          <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Cuadernillos</th>
+                          <th className="text-right px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Total</th>
+                          <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
+                        {schoolOrders.map((orderData) => {
+                          const order = orderData.order;
+                          const items = orderData.items || [];
+                          const studentName = studentNames[order.studentId] || '—';
+                          const orderSchools = order.student?.course?.schools || [];
+                          return (
+                            <tr key={order.id} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
+                              <td className="px-5 py-3">
+                                <span className="font-medium text-surface-900 dark:text-surface-100">#{order.id.slice(0, 8)}</span>
+                                <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
+                                  {new Date(order.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </p>
+                              </td>
+                              <td className="px-5 py-3 text-surface-700 dark:text-surface-300">{studentName}</td>
+                              <td className="px-5 py-3">
+                                <div className="flex flex-wrap gap-1">
+                                  {orderSchools.map(sc => (
+                                    <span key={sc.school.id} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-200 dark:ring-primary-800">
+                                      {sc.school.shortName || sc.school.name}
+                                    </span>
+                                  ))}
+                                  {orderSchools.length === 0 && (
+                                    <span className="text-xs text-surface-400">—</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-5 py-3">
+                                <div className="space-y-1">
+                                  {items.map((item) => (
+                                    <div key={item.id} className="flex items-center gap-2 text-surface-600 dark:text-surface-400">
+                                      <span className="text-xs bg-surface-100 dark:bg-surface-700 px-1.5 py-0.5 rounded">{item.quantity}x</span>
+                                      <span className="text-sm">{item.title}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="px-5 py-3 text-right font-bold text-surface-900 dark:text-surface-100">{formatPrice(order.total)}</td>
+                              <td className="px-5 py-3">
+                                {order.status === 'delivered' ? (
+                                  <span className="badge bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 ring-1 ring-green-400 dark:ring-green-700">Entregado</span>
+                                ) : order.status === 'ready' ? (
+                                  <button
+                                    onClick={() => advanceOrderStatus(order.id, 'ready')}
+                                    className="badge bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 ring-1 ring-blue-400 dark:ring-blue-700 cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/50 hover:text-green-800 dark:hover:text-green-300 hover:ring-green-400 dark:hover:ring-green-700 transition-colors"
+                                    title="Clic para marcar como entregado"
+                                  >
+                                    Listo → Entregado
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => advanceOrderStatus(order.id, 'pending')}
+                                    className="badge bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 ring-1 ring-amber-400 dark:ring-amber-700 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:text-blue-800 dark:hover:text-blue-300 hover:ring-blue-400 dark:hover:ring-blue-700 transition-colors"
+                                    title="Clic para marcar como listo"
+                                  >
+                                    Pendiente → Listo
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </details>
+                ))}
+              </div>
+            )}
+          </div>
       </div>
       )}
 

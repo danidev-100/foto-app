@@ -18,6 +18,9 @@ export const adminCreateBooklet = (data) => api.post('/admin/booklets', data);
 export const adminUpdateBooklet = (id, data) => api.put(`/admin/booklets/${id}`, data);
 export const adminDeleteBooklet = (id) => api.delete(`/admin/booklets/${id}`);
 
+// Schools
+export const adminGetSchools = () => api.get('/admin/schools');
+
 // Orders
 export const adminGetOrders = (params) => api.get('/admin/orders/details', { params });
 export const adminUpdateOrderStatus = (id, data) => api.put(`/admin/orders/${id}/status`, data);

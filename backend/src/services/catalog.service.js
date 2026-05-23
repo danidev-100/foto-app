@@ -175,6 +175,13 @@ export class CatalogService {
         orderBy: { title: 'asc' },
         skip: (page - 1) * limit,
         take: limit,
+        include: {
+          course: {
+            include: {
+              schools: { include: { school: true } },
+            },
+          },
+        },
       }),
       prisma.booklet.count({ where }),
     ]);
