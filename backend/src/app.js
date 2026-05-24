@@ -137,26 +137,6 @@ async function ensureSchools() {
     );
   }
 
-  // Same fix for booklets
-  const [nullBookletResult] = await prisma.$queryRawUnsafe(
-    `SELECT COUNT(*)::int AS cnt FROM booklets WHERE school_id IS NULL`
-  );
-  if ((nullBookletResult?.cnt ?? 0) > 0) {
-    const [schoolRow] = await prisma.$queryRawUnsafe(
-      `SELECT id FROM schools LIMIT 1`
-    );
-    if (schoolRow) {
-      await prisma.$executeRawUnsafe(
-        `UPDATE booklets SET school_id = '${schoolRow.id}' WHERE school_id IS NULL`
-      );
-      console.log(`Assigned ${nullBookletResult.cnt} booklets to school ${schoolRow.id}`);
-      await prisma.$executeRawUnsafe(
-        `ALTER TABLE booklets ALTER COLUMN school_id SET NOT NULL`
-      );
-    }
-  }
-  }
-
   // Seed schools if empty
   const [countResult] = await prisma.$queryRawUnsafe(
     `SELECT COUNT(*)::int AS cnt FROM schools`
