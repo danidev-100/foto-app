@@ -65,21 +65,50 @@ async function ensureSchema() {
 }
 
 async function ensureSchools() {
-  // Fix courses with NULL school_id (column added via ALTER TABLE on existing rows)
-  const nullCourses = await prisma.course.count({ where: { schoolId: null } });
+  // Fix courses with NULL school_id using raw SQL (Prisma rejects null on non-nullable String field)
+  const [nullResult] = await prisma.$queryRawUnsafe(
+    `SELECT COUNT(*)::int AS cnt FROM courses WHERE school_id IS NULL`
+  );
+  const nullCourses = nullResult?.cnt ?? 0;
   if (nullCourses > 0) {
-    const firstSchool = await prisma.school.findFirst();
-    if (firstSchool) {
-      await prisma.course.updateMany({
-        where: { schoolId: null },
-        data: { schoolId: firstSchool.id },
-      });
-      console.log(`Assigned ${nullCourses} courses to ${firstSchool.name}`);
+    const [schoolRow] = await prisma.$queryRawUnsafe(
+      `SELECT id FROM schools LIMIT 1`
+    );
+    if (schoolRow) {
+      await prisma.$executeRawUnsafe(
+        `UPDATE courses SET school_id = '${schoolRow.id}' WHERE school_id IS NULL`
+      );
+    console.log(`Assigned ${nullCourses} courses to school ${schoolRow.id}`);
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE courses ALTER COLUMN school_id SET NOT NULL`
+    );
+  }
+
+  // Same fix for booklets
+  const [nullBookletResult] = await prisma.$queryRawUnsafe(
+    `SELECT COUNT(*)::int AS cnt FROM booklets WHERE school_id IS NULL`
+  );
+  if ((nullBookletResult?.cnt ?? 0) > 0) {
+    const [schoolRow] = await prisma.$queryRawUnsafe(
+      `SELECT id FROM schools LIMIT 1`
+    );
+    if (schoolRow) {
+      await prisma.$executeRawUnsafe(
+        `UPDATE booklets SET school_id = '${schoolRow.id}' WHERE school_id IS NULL`
+      );
+      console.log(`Assigned ${nullBookletResult.cnt} booklets to school ${schoolRow.id}`);
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE booklets ALTER COLUMN school_id SET NOT NULL`
+      );
     }
+  }
   }
 
   // Seed schools if empty
-  const schoolCount = await prisma.school.count().catch(() => 0);
+  const [countResult] = await prisma.$queryRawUnsafe(
+    `SELECT COUNT(*)::int AS cnt FROM schools`
+  );
+  const schoolCount = countResult?.cnt ?? 0;
   if (schoolCount > 0) return;
   console.log('Init: seeding schools…');
 
