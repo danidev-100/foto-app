@@ -1,7 +1,7 @@
 {
-  "buildCommand": "cd frontend && npm run build",
+  "installCommand": "cd frontend && npm install && cd ../backend && npm install",
+  "buildCommand": "cd frontend && npm run build && cd ../backend && npx prisma db push --accept-data-loss",
   "outputDirectory": "frontend/dist",
-  "installCommand": "cd frontend && npm install",
   "experimentalServices": {
     "frontend": {
       "entrypoint": "frontend",
