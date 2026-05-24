@@ -1,52 +1,92 @@
-import { execSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import app from './app.js';
 import { config } from './config.js';
 import { MercadoPagoGateway } from './lib/mercadopago.js';
 import { initPaymentService } from './controllers/payment.controller.js';
 import { prisma } from './lib/prisma.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
 // ── Ensure schema is up to date ─────────────────────────────────────
 // Vercel Services skips vercel-build, so db push may never run.
-// We run it here at startup so the DB schema always matches.
+// We sync missing columns manually using raw SQL instead.
 async function ensureSchema() {
   try {
-    const prismaCli = resolve(__dirname, '../../node_modules/.bin/prisma');
-    const cmd = existsSync(prismaCli)
-      ? `"${prismaCli}" db push --accept-data-loss`
-      : 'npx prisma db push --accept-data-loss';
-    execSync(cmd, { cwd: resolve(__dirname, '..'), stdio: 'pipe', timeout: 30000 });
-    console.log('Schema synced via prisma db push');
+    // Check if schools table exists
+    const tableResult = await prisma.$queryRawUnsafe(
+      `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'schools') AS e`
+    );
+    const hasSchoolsTable = tableResult[0]?.e;
+    if (!hasSchoolsTable) {
+      console.log('Missing schools table — creating it');
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE schools (
+          id TEXT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          short_name VARCHAR(100),
+          is_active BOOLEAN NOT NULL DEFAULT true,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+      `);
+    }
+
+    // Check if courses.school_id column exists (added in refactor)
+    const colResult = await prisma.$queryRawUnsafe(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.columns
+        WHERE table_name = 'courses' AND column_name = 'school_id'
+      ) AS e
+    `);
+    const hasSchoolId = colResult[0]?.e;
+    if (!hasSchoolId) {
+      console.log('Missing courses.school_id — adding it');
+      await prisma.$executeRawUnsafe(`
+        ALTER TABLE courses ADD COLUMN school_id TEXT;
+      `);
+    }
+
+    // Check if booklets.school_id column exists
+    const bookletColResult = await prisma.$queryRawUnsafe(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.columns
+        WHERE table_name = 'booklets' AND column_name = 'school_id'
+      ) AS e
+    `);
+    const hasBookletSchoolId = bookletColResult[0]?.e;
+    if (!hasBookletSchoolId) {
+      console.log('Missing booklets.school_id — adding it');
+      await prisma.$executeRawUnsafe(`
+        ALTER TABLE booklets ADD COLUMN school_id TEXT;
+      `);
+    }
   } catch (err) {
-    console.warn('prisma db push failed (non-fatal):', err.message);
+    console.warn('ensureSchema skipped:', err.message);
   }
 }
 
 // ── Ensure schools exist (seed data) ────────────────────────────────
 async function ensureSchools() {
-  const count = await prisma.school.count();
+  const count = await prisma.school.count().catch(() => 0);
   if (count > 0) return;
   console.log('Seeding schools…');
 
-  const donBosco = await prisma.school.create({
-    data: { name: 'Colegio Don Bosco', shortName: 'Don Bosco' },
-  });
-  await prisma.school.create({
-    data: { name: 'Instituto Rodeo del Medio', shortName: 'Rodeo del Medio' },
-  });
-
-  // Assign all courses to Don Bosco by default
-  const courses = await prisma.course.findMany({ where: { isActive: true } });
-  if (courses.length > 0) {
-    await prisma.course.updateMany({
-      where: { id: { in: courses.map(c => c.id) } },
-      data: { schoolId: donBosco.id },
+  try {
+    const donBosco = await prisma.school.create({
+      data: { name: 'Colegio Don Bosco', shortName: 'Don Bosco' },
     });
-    console.log(`Assigned ${courses.length} courses to ${donBosco.name}`);
+    await prisma.school.create({
+      data: { name: 'Instituto Rodeo del Medio', shortName: 'Rodeo del Medio' },
+    });
+
+    // Assign all courses to Don Bosco by default
+    const courses = await prisma.course.findMany({ where: { isActive: true } });
+    if (courses.length > 0) {
+      await prisma.course.updateMany({
+        where: { id: { in: courses.map(c => c.id) } },
+        data: { schoolId: donBosco.id },
+      });
+      console.log(`Assigned ${courses.length} courses to ${donBosco.name}`);
+    }
+  } catch (err) {
+    console.warn('ensureSchools skipped:', err.message);
   }
 }
 
