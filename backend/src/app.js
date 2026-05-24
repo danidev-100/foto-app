@@ -65,22 +65,75 @@ async function ensureSchema() {
 }
 
 async function ensureSchools() {
-  // Fix courses with NULL school_id using raw SQL (Prisma rejects null on non-nullable String field)
+  // ── Migrate from old M:N school_courses table if it still exists ──
+  const [oldTableResult] = await prisma.$queryRawUnsafe(
+    `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'school_courses') AS e`
+  );
+  if (oldTableResult?.e) {
+    console.log('Migrating data from school_courses (old M:N) to courses.school_id');
+    await prisma.$executeRawUnsafe(`
+      UPDATE courses
+      SET school_id = sc.school_id
+      FROM school_courses sc
+      WHERE courses.id = sc.course_id AND courses.school_id IS NULL
+    `);
+    // Drop the old table so future startups skip this
+    await prisma.$executeRawUnsafe(`DROP TABLE school_courses`);
+    console.log('school_courses table migrated and dropped');
+  }
+
+  // ── Fix remaining courses with NULL school_id ──
   const [nullResult] = await prisma.$queryRawUnsafe(
     `SELECT COUNT(*)::int AS cnt FROM courses WHERE school_id IS NULL`
   );
   const nullCourses = nullResult?.cnt ?? 0;
   if (nullCourses > 0) {
-    const [schoolRow] = await prisma.$queryRawUnsafe(
-      `SELECT id FROM schools LIMIT 1`
+    // Assign orphan courses to Don Bosco
+    const [donBosco] = await prisma.$queryRawUnsafe(
+      `SELECT id FROM schools ORDER BY name ASC LIMIT 1`
     );
-    if (schoolRow) {
+    if (donBosco) {
       await prisma.$executeRawUnsafe(
-        `UPDATE courses SET school_id = '${schoolRow.id}' WHERE school_id IS NULL`
+        `UPDATE courses SET school_id = '${donBosco.id}' WHERE school_id IS NULL`
       );
-    console.log(`Assigned ${nullCourses} courses to school ${schoolRow.id}`);
+      console.log(`Assigned ${nullCourses} orphan courses to ${donBosco.id}`);
+    }
+  }
+
+  // ── Ensure courses.school_id is NOT NULL ──
+  const [colNull] = await prisma.$queryRawUnsafe(`
+    SELECT COUNT(*)::int AS cnt FROM information_schema.columns
+    WHERE table_name = 'courses' AND column_name = 'school_id' AND is_nullable = 'YES'
+  `);
+  if ((colNull?.cnt ?? 0) > 0) {
     await prisma.$executeRawUnsafe(
       `ALTER TABLE courses ALTER COLUMN school_id SET NOT NULL`
+    );
+  }
+
+  // ── Same fix for booklets ──
+  const [nullBookletResult] = await prisma.$queryRawUnsafe(
+    `SELECT COUNT(*)::int AS cnt FROM booklets WHERE school_id IS NULL`
+  );
+  if ((nullBookletResult?.cnt ?? 0) > 0) {
+    const [firstSchool] = await prisma.$queryRawUnsafe(
+      `SELECT id FROM schools LIMIT 1`
+    );
+    if (firstSchool) {
+      await prisma.$executeRawUnsafe(
+        `UPDATE booklets SET school_id = '${firstSchool.id}' WHERE school_id IS NULL`
+      );
+      console.log(`Assigned ${nullBookletResult.cnt} orphan booklets to school ${firstSchool.id}`);
+    }
+  }
+
+  const [bColNull] = await prisma.$queryRawUnsafe(`
+    SELECT COUNT(*)::int AS cnt FROM information_schema.columns
+    WHERE table_name = 'booklets' AND column_name = 'school_id' AND is_nullable = 'YES'
+  `);
+  if ((bColNull?.cnt ?? 0) > 0) {
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE booklets ALTER COLUMN school_id SET NOT NULL`
     );
   }
 
