@@ -331,7 +331,7 @@ export class OrderService {
           include: {
             course: {
               include: {
-                schools: { include: { school: true } },
+                school: true,
               },
             },
           },
@@ -362,7 +362,7 @@ export class OrderService {
           include: {
             course: {
               include: {
-                schools: { include: { school: true } },
+                school: true,
               },
             },
           },

@@ -1,4 +1,4 @@
-import api from './client';
+import api from './client.js';
 
 // Courses
 export const adminGetCourses = () => api.get('/admin/courses');
