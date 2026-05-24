@@ -65,8 +65,22 @@ async function ensureSchema() {
 }
 
 async function ensureSchools() {
-  const count = await prisma.school.count().catch(() => 0);
-  if (count > 0) return;
+  // Fix courses with NULL school_id (column added via ALTER TABLE on existing rows)
+  const nullCourses = await prisma.course.count({ where: { schoolId: null } });
+  if (nullCourses > 0) {
+    const firstSchool = await prisma.school.findFirst();
+    if (firstSchool) {
+      await prisma.course.updateMany({
+        where: { schoolId: null },
+        data: { schoolId: firstSchool.id },
+      });
+      console.log(`Assigned ${nullCourses} courses to ${firstSchool.name}`);
+    }
+  }
+
+  // Seed schools if empty
+  const schoolCount = await prisma.school.count().catch(() => 0);
+  if (schoolCount > 0) return;
   console.log('Init: seeding schools…');
 
   const donBosco = await prisma.school.create({
@@ -82,6 +96,7 @@ async function ensureSchools() {
       where: { id: { in: courses.map(c => c.id) } },
       data: { schoolId: donBosco.id },
     });
+    console.log(`Assigned ${courses.length} courses to ${donBosco.name}`);
   }
 }
 
