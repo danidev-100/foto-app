@@ -11,8 +11,93 @@ import orderRoutes from './routes/order.routes.js';
 import webhookRoutes from './routes/webhook.routes.js';
 import { errorMiddleware } from './middleware/error.js';
 import { getBankDetails } from './controllers/config.controller.js';
+import { prisma } from './lib/prisma.js';
 
 const app = express();
+
+// ── Init schema + seed (runs once on first request) ─────────────────
+// Vercel imports app.js as a serverless handler (bypasses server.js),
+// so init MUST live here — not in server.js.
+let initialized = false;
+
+async function ensureSchema() {
+  // Create schools table if missing
+  const [tableResult] = await prisma.$queryRawUnsafe(
+    `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'schools') AS e`
+  );
+  if (!tableResult?.e) {
+    console.log('Init: creating schools table');
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE schools (
+        id TEXT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        short_name VARCHAR(100),
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+  }
+
+  // Add courses.school_id if missing
+  const [colResult] = await prisma.$queryRawUnsafe(`
+    SELECT EXISTS (
+      SELECT FROM information_schema.columns
+      WHERE table_name = 'courses' AND column_name = 'school_id'
+    ) AS e
+  `);
+  if (!colResult?.e) {
+    console.log('Init: adding courses.school_id');
+    await prisma.$executeRawUnsafe(`ALTER TABLE courses ADD COLUMN school_id TEXT;`);
+  }
+
+  // Add booklets.school_id if missing
+  const [bColResult] = await prisma.$queryRawUnsafe(`
+    SELECT EXISTS (
+      SELECT FROM information_schema.columns
+      WHERE table_name = 'booklets' AND column_name = 'school_id'
+    ) AS e
+  `);
+  if (!bColResult?.e) {
+    console.log('Init: adding booklets.school_id');
+    await prisma.$executeRawUnsafe(`ALTER TABLE booklets ADD COLUMN school_id TEXT;`);
+  }
+}
+
+async function ensureSchools() {
+  const count = await prisma.school.count().catch(() => 0);
+  if (count > 0) return;
+  console.log('Init: seeding schools…');
+
+  const donBosco = await prisma.school.create({
+    data: { name: 'Colegio Don Bosco', shortName: 'Don Bosco' },
+  });
+  await prisma.school.create({
+    data: { name: 'Instituto Rodeo del Medio', shortName: 'Rodeo del Medio' },
+  });
+
+  const courses = await prisma.course.findMany({ where: { isActive: true } });
+  if (courses.length > 0) {
+    await prisma.course.updateMany({
+      where: { id: { in: courses.map(c => c.id) } },
+      data: { schoolId: donBosco.id },
+    });
+  }
+}
+
+app.use(async (_req, res, next) => {
+  if (!initialized) {
+    initialized = true;
+    try {
+      await ensureSchema();
+      await ensureSchools();
+      console.log('Init complete');
+    } catch (err) {
+      console.error('Init failed:', err);
+    }
+  }
+  next();
+});
 
 // ── Global middleware ──────────────────────────────────────────────
 app.use(cors({
