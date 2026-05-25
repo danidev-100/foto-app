@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   adminGetCourses, adminGetDivisions, adminGetSchools,
   adminGetBooklets, adminCreateBooklet, adminUpdateBooklet, adminDeleteBooklet,
-  adminCreateCourse, adminDeleteCourse,
+  adminCreateCourse, adminGetCourseUsage, adminDeleteCourse,
   adminGetOrders, adminUpdateOrderStatus,
   adminSearchOrderByID, adminSearchOrdersByStudentName, adminSearchOrdersByBookletTitle,
 } from '../api/admin';
@@ -59,6 +59,7 @@ export default function Admin() {
   const [courseSelLevel, setCourseSelLevel] = useState('');
   const [courseSelGrade, setCourseSelGrade] = useState('');
   const [courseCreating, setCourseCreating] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { id, name, bookletCount, studentCount, divisionCount }
 
   // Order search state
   const [searchOrderId, setSearchOrderId] = useState('');
@@ -169,14 +170,34 @@ export default function Admin() {
     }
   };
 
-  const handleDeleteCourse = async (courseId) => {
-    if (!confirm('¿Eliminar este curso y todas sus divisiones?')) return;
+  const handleDeleteCourse = async (courseId, courseName) => {
     try {
-      await adminDeleteCourse(courseId);
-      showToast('Curso eliminado');
+      const res = await adminGetCourseUsage(courseId);
+      const { bookletCount, studentCount, divisionCount } = res.data.data;
+      setDeleteConfirm({ id: courseId, name: courseName, bookletCount, studentCount, divisionCount });
+    } catch (err) {
+      showToast('Error al verificar el curso', 'error');
+    }
+  };
+
+  const confirmDeleteCourse = async () => {
+    if (!deleteConfirm) return;
+    try {
+      await adminDeleteCourse(deleteConfirm.id);
+      showToast(`Curso "${deleteConfirm.name}" eliminado`);
+      setDeleteConfirm(null);
       loadData();
     } catch (err) {
-      showToast('Error al eliminar curso', 'error');
+      const details = err.response?.data?.error?.details;
+      if (details) {
+        showToast(
+          `No se puede eliminar: tiene ${details.bookletCount} cuadernillo(s) y ${details.studentCount} estudiante(s) vinculados`,
+          'error'
+        );
+      } else {
+        showToast('Error al eliminar curso', 'error');
+      }
+      setDeleteConfirm(null);
     }
   };
 
@@ -903,6 +924,7 @@ export default function Admin() {
 
       {/* Courses Tab */}
       {activeTab === 'courses' && (
+        <>
         <div className="space-y-6">
           {/* Course creator */}
           <div className="card p-5">
@@ -1058,7 +1080,7 @@ export default function Admin() {
                                   </span>
                                 </div>
                                 <button
-                                  onClick={() => handleDeleteCourse(course.id)}
+                                  onClick={() => handleDeleteCourse(course.id, course.name)}
                                   className="text-red-600 hover:text-red-700 text-sm font-medium"
                                 >
                                   Eliminar
@@ -1075,6 +1097,81 @@ export default function Admin() {
             )}
           </div>
         </div>
+
+        {deleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="bg-white dark:bg-surface-800 rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-100">Eliminar curso</h3>
+                  <p className="text-sm text-surface-500 dark:text-surface-400">{deleteConfirm.name}</p>
+                </div>
+              </div>
+
+              {deleteConfirm.bookletCount > 0 || deleteConfirm.studentCount > 0 ? (
+                <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-2">Este curso tiene contenido vinculado:</p>
+                  <ul className="space-y-1 text-sm text-amber-700 dark:text-amber-400">
+                    {deleteConfirm.bookletCount > 0 && (
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        {deleteConfirm.bookletCount} cuadernillo{deleteConfirm.bookletCount !== 1 ? 'es' : ''}
+                      </li>
+                    )}
+                    {deleteConfirm.studentCount > 0 && (
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        {deleteConfirm.studentCount} estudiante{deleteConfirm.studentCount !== 1 ? 's' : ''}
+                      </li>
+                    )}
+                    {deleteConfirm.divisionCount > 0 && (
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        {deleteConfirm.divisionCount} divisiones
+                      </li>
+                    )}
+                  </ul>
+                  <p className="mt-2 text-xs text-amber-600 dark:text-amber-500">
+                    Primero desvinculá los cuadernillos y estudiantes antes de eliminar el curso.
+                  </p>
+                </div>
+              ) : (
+                <div className="mb-4 p-4 bg-surface-50 dark:bg-surface-800 rounded-xl">
+                  <p className="text-sm text-surface-600 dark:text-surface-400">
+                    Este curso no tiene cuadernillos ni estudiantes vinculados.
+                    {deleteConfirm.divisionCount > 0 && ` Se eliminarán también sus ${deleteConfirm.divisionCount} divisiones.`}
+                  </p>
+                </div>
+              )}
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="btn-secondary"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmDeleteCourse}
+                  disabled={deleteConfirm.bookletCount > 0 || deleteConfirm.studentCount > 0}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    deleteConfirm.bookletCount > 0 || deleteConfirm.studentCount > 0
+                      ? 'bg-surface-200 dark:bg-surface-700 text-surface-400 dark:text-surface-500 cursor-not-allowed'
+                      : 'bg-red-600 hover:bg-red-700 text-white'
+                  }`}
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        </>
       )}
 
       {/* Orders Tab */}

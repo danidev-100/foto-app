@@ -4,6 +4,7 @@ import api from './client.js';
 export const adminGetCourses = () => api.get('/admin/courses');
 export const adminCreateCourse = (data) => api.post('/admin/courses', data);
 export const adminUpdateCourse = (id, data) => api.put(`/admin/courses/${id}`, data);
+export const adminGetCourseUsage = (id) => api.get(`/admin/courses/${id}/usage`);
 export const adminDeleteCourse = (id) => api.delete(`/admin/courses/${id}`);
 
 // Divisions

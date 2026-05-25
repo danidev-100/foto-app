@@ -19,6 +19,7 @@ router.get('/schools', (req, res) => catalog.listSchools(req, res));
 router.get('/courses', (req, res) => catalog.listCoursesAdmin(req, res));
 router.post('/courses', (req, res) => catalog.createCourse(req, res));
 router.put('/courses/:id', (req, res) => catalog.updateCourse(req, res));
+router.get('/courses/:id/usage', (req, res) => catalog.getCourseUsage(req, res));
 router.delete('/courses/:id', (req, res) => catalog.deleteCourse(req, res));
 
 // Divisions

@@ -101,12 +101,25 @@ export class CatalogController {
     }
   }
 
+  async getCourseUsage(req, res) {
+    try {
+      const usage = await catalogService.getCourseUsage(req.params.id);
+      return successJSON(res, 200, usage);
+    } catch (err) {
+      if (err.code === 'CAT_001') return errorJSON(res, 404, 'CAT_001', 'course not found');
+      return errorJSON(res, 500, 'INF_001', 'failed to get course usage');
+    }
+  }
+
   async deleteCourse(req, res) {
     try {
       await catalogService.deleteCourse(req.params.id);
       return successJSON(res, 200, { message: 'course deleted' });
     } catch (err) {
       if (err.code === 'CAT_001') return errorJSON(res, 404, 'CAT_001', 'course not found');
+      if (err.code === 'CAT_004') {
+        return errorJSON(res, 409, 'CAT_004', err.message, err.details);
+      }
       return errorJSON(res, 500, 'INF_001', 'failed to delete course');
     }
   }

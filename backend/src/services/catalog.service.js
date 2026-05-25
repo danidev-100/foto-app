@@ -120,7 +120,34 @@ export class CatalogService {
     });
   }
 
+  async getCourseUsage(id) {
+    const course = await prisma.course.findUnique({ where: { id } });
+    if (!course) {
+      const err = new Error('course not found');
+      err.code = 'CAT_001';
+      err.status = 404;
+      throw err;
+    }
+    const [bookletCount, studentCount, divisionCount] = await Promise.all([
+      prisma.booklet.count({ where: { courseId: id } }),
+      prisma.student.count({ where: { courseId: id } }),
+      prisma.division.count({ where: { courseId: id } }),
+    ]);
+    return { bookletCount, studentCount, divisionCount };
+  }
+
   async deleteCourse(id) {
+    // Check usage before deleting
+    const usage = await this.getCourseUsage(id);
+    if (usage.bookletCount > 0 || usage.studentCount > 0) {
+      const err = new Error(
+        `cannot delete course with ${usage.bookletCount} booklet(s) and ${usage.studentCount} student(s) linked`
+      );
+      err.code = 'CAT_004';
+      err.status = 409;
+      err.details = usage;
+      throw err;
+    }
     const result = await prisma.course.deleteMany({ where: { id } });
     if (result.count === 0) {
       const err = new Error('course not found');
