@@ -25,7 +25,8 @@ export class CatalogService {
   async listCourses() {
     return prisma.course.findMany({
       where: { isActive: true },
-      orderBy: { name: 'asc' },
+      include: { school: true },
+      orderBy: [{ school: { name: 'asc' } }, { name: 'asc' }],
     });
   }
 
@@ -73,9 +74,31 @@ export class CatalogService {
   }
 
   // Admin — Courses
-  async createCourse({ name, description }) {
+  async createCourse({ name, description, schoolId, divisions }) {
+    if (!schoolId) {
+      const err = new Error('school_id is required');
+      err.code = 'AUTH_004';
+      err.status = 400;
+      throw err;
+    }
+    // Verify school exists
+    const school = await prisma.school.findUnique({ where: { id: schoolId } });
+    if (!school) {
+      const err = new Error('school not found');
+      err.code = 'AUTH_004';
+      err.status = 400;
+      throw err;
+    }
     return prisma.course.create({
-      data: { name, description, isActive: true },
+      data: {
+        name, description, isActive: true, schoolId,
+        ...(divisions?.length > 0 && {
+          divisions: {
+            create: divisions.map(d => ({ name: d, isActive: true })),
+          },
+        }),
+      },
+      include: { school: true, divisions: true },
     });
   }
 

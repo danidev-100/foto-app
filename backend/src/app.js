@@ -150,20 +150,63 @@ async function ensureSchools() {
   if (schoolCount > 0) return;
   console.log('Init: seeding schools…');
 
-  const donBosco = await prisma.school.create({
+  await prisma.school.create({
     data: { name: 'Colegio Don Bosco', shortName: 'Don Bosco' },
   });
   await prisma.school.create({
     data: { name: 'Instituto Rodeo del Medio', shortName: 'Rodeo del Medio' },
   });
+  console.log('Schools seeded — courses will be created by ensureCoursesExist()');
+}
 
-  const courses = await prisma.course.findMany({ where: { isActive: true } });
-  if (courses.length > 0) {
-    await prisma.course.updateMany({
-      where: { id: { in: courses.map(c => c.id) } },
-      data: { schoolId: donBosco.id },
+// ── Standard course structure (mirrors frontend COURSE_STRUCTURE) ──
+const STANDARD_COURSES = [
+  // Primaria
+  { name: 'Primaria - Jardín',     divisions: ['A', 'B', 'C'] },
+  { name: 'Primaria - 1° Primero', divisions: ['A', 'B', 'C'] },
+  { name: 'Primaria - 2° Segundo', divisions: ['A', 'B', 'C'] },
+  { name: 'Primaria - 3° Tercero', divisions: ['A', 'B', 'C'] },
+  { name: 'Primaria - 4° Cuarto',  divisions: ['A', 'B', 'C'] },
+  { name: 'Primaria - 5° Quinto',  divisions: ['A', 'B', 'C'] },
+  { name: 'Primaria - 6° Sexto',   divisions: ['A', 'B', 'C'] },
+  { name: 'Primaria - 7° Séptimo', divisions: ['A', 'B', 'C'] },
+  // Secundaria
+  { name: 'Secundaria - 1° Primero', divisions: ['A', 'B', 'C', 'D', 'E'] },
+  { name: 'Secundaria - 2° Segundo', divisions: ['A', 'B', 'C', 'D', 'E'] },
+  { name: 'Secundaria - 3° Tercero', divisions: ['A', 'B', 'N', 'H'] },
+  { name: 'Secundaria - 4° Cuarto',  divisions: ['A', 'B', 'N', 'H'] },
+  { name: 'Secundaria - 5° Quinto',  divisions: ['A', 'B', 'N', 'H'] },
+];
+
+async function ensureCoursesExist() {
+  const schools = await prisma.school.findMany({ where: { isActive: true } });
+  for (const school of schools) {
+    const courseCount = await prisma.course.count({
+      where: { schoolId: school.id, isActive: true },
     });
-    console.log(`Assigned ${courses.length} courses to ${donBosco.name}`);
+    if (courseCount > 0) {
+      console.log(`School "${school.name}" already has ${courseCount} courses — skipping`);
+      continue;
+    }
+
+    console.log(`Creating standard courses for "${school.name}"…`);
+    for (const sc of STANDARD_COURSES) {
+      const course = await prisma.course.create({
+        data: {
+          name: sc.name,
+          description: null,
+          isActive: true,
+          schoolId: school.id,
+          divisions: {
+            create: sc.divisions.map(d => ({
+              name: d,
+              isActive: true,
+            })),
+          },
+        },
+      });
+      console.log(`  Created course "${course.name}" with ${sc.divisions.length} divisions`);
+    }
   }
 }
 
@@ -173,6 +216,7 @@ app.use(async (_req, res, next) => {
     try {
       await ensureSchema();
       await ensureSchools();
+      await ensureCoursesExist();
       console.log('Init complete');
     } catch (err) {
       console.error('Init failed:', err);

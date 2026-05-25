@@ -77,12 +77,14 @@ export class CatalogController {
   }
 
   async createCourse(req, res) {
-    const { name, description } = req.body;
+    const { name, description, school_id: schoolId, divisions } = req.body;
     if (!name) return errorJSON(res, 400, 'AUTH_004', 'name is required');
+    if (!schoolId) return errorJSON(res, 400, 'AUTH_004', 'school_id is required');
     try {
-      const course = await catalogService.createCourse({ name, description });
+      const course = await catalogService.createCourse({ name, description, schoolId, divisions });
       return successJSON(res, 201, course);
     } catch (err) {
+      if (err.code === 'AUTH_004') return errorJSON(res, 400, 'AUTH_004', err.message);
       return errorJSON(res, 500, 'INF_001', 'failed to create course');
     }
   }

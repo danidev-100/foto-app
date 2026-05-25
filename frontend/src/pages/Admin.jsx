@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   adminGetCourses, adminGetDivisions, adminGetSchools,
   adminGetBooklets, adminCreateBooklet, adminUpdateBooklet, adminDeleteBooklet,
+  adminCreateCourse, adminDeleteCourse,
   adminGetOrders, adminUpdateOrderStatus,
   adminSearchOrderByID, adminSearchOrdersByStudentName, adminSearchOrdersByBookletTitle,
 } from '../api/admin';
@@ -51,6 +52,13 @@ export default function Admin() {
   const [studentNames, setStudentNames] = useState({});
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
+
+  // Courses tab state
+  const [courseCreateMode, setCourseCreateMode] = useState('single');
+  const [courseSchoolId, setCourseSchoolId] = useState('');
+  const [courseSelLevel, setCourseSelLevel] = useState('');
+  const [courseSelGrade, setCourseSelGrade] = useState('');
+  const [courseCreating, setCourseCreating] = useState(false);
 
   // Order search state
   const [searchOrderId, setSearchOrderId] = useState('');
@@ -102,6 +110,73 @@ export default function Admin() {
       showToast('Error al cargar datos', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ── Course management handlers ──
+  const handleCreateSingleCourse = async () => {
+    if (!courseSchoolId || !courseSelLevel || !courseSelGrade) return;
+    setCourseCreating(true);
+    try {
+      const levelData = COURSE_STRUCTURE[courseSelLevel];
+      const gradeData = levelData.grades.find(g => g.value === courseSelGrade);
+      const courseName = `${levelData.label} - ${gradeData.label}`;
+      const divisions = levelData.getDivisions
+        ? levelData.getDivisions(courseSelGrade)
+        : levelData.divisions;
+
+      await adminCreateCourse({
+        name: courseName,
+        school_id: courseSchoolId,
+        divisions,
+      });
+      showToast(`Curso "${courseName}" creado`);
+      setCourseSelLevel('');
+      setCourseSelGrade('');
+      loadData();
+    } catch (err) {
+      showToast(`Error al crear curso: ${err.response?.data?.error?.message || err.message}`, 'error');
+    } finally {
+      setCourseCreating(false);
+    }
+  };
+
+  const handleGenerateAllCourses = async () => {
+    if (!courseSchoolId) return;
+    setCourseCreating(true);
+    let created = 0;
+    try {
+      for (const [levelKey, levelData] of Object.entries(COURSE_STRUCTURE)) {
+        for (const grade of levelData.grades) {
+          const courseName = `${levelData.label} - ${grade.label}`;
+          const divisions = levelData.getDivisions
+            ? levelData.getDivisions(grade.value)
+            : levelData.divisions;
+          await adminCreateCourse({
+            name: courseName,
+            school_id: courseSchoolId,
+            divisions,
+          });
+          created++;
+        }
+      }
+      showToast(`${created} cursos creados`);
+      loadData();
+    } catch (err) {
+      showToast(`Error: se crearon ${created} cursos antes del error`, 'error');
+    } finally {
+      setCourseCreating(false);
+    }
+  };
+
+  const handleDeleteCourse = async (courseId) => {
+    if (!confirm('¿Eliminar este curso y todas sus divisiones?')) return;
+    try {
+      await adminDeleteCourse(courseId);
+      showToast('Curso eliminado');
+      loadData();
+    } catch (err) {
+      showToast('Error al eliminar curso', 'error');
     }
   };
 
@@ -317,7 +392,9 @@ export default function Admin() {
     const gradeData = levelData.grades.find(g => g.value === selGrade);
     const expectedCourseName = `${levelData.label} - ${gradeData.label}`;
 
-    const matchedCourse = courses.find(c => c.name === expectedCourseName);
+    // Only match courses that belong to the selected school
+    const schoolCourses = selectedSchoolData?.courses || [];
+    const matchedCourse = schoolCourses.find(c => c.name === expectedCourseName);
     if (!matchedCourse) {
       setMatchedCourseId('');
       setDivisionMap({});
@@ -536,6 +613,16 @@ export default function Admin() {
               {orders.length}
             </span>
           )}
+        </button>
+        <button
+          onClick={() => setActiveTab('courses')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === 'courses'
+              ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-300 dark:ring-primary-700'
+              : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700'
+          }`}
+        >
+          Cursos
         </button>
         <button
           onClick={() => setActiveTab('users')}
@@ -812,6 +899,182 @@ export default function Admin() {
           )}
         </div>
       </div>
+      )}
+
+      {/* Courses Tab */}
+      {activeTab === 'courses' && (
+        <div className="space-y-6">
+          {/* Course creator */}
+          <div className="card p-5">
+            <h3 className="font-semibold text-surface-900 dark:text-surface-100 mb-4">
+              {courseCreateMode === 'bulk'
+                ? 'Generar cursos estándar'
+                : 'Crear curso individual'}
+            </h3>
+
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setCourseCreateMode('single')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  courseCreateMode === 'single'
+                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-300'
+                    : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                }`}
+              >
+                Individual
+              </button>
+              <button
+                onClick={() => setCourseCreateMode('bulk')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  courseCreateMode === 'bulk'
+                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-300'
+                    : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                }`}
+              >
+                Generar todos
+              </button>
+            </div>
+
+            {/* School selector */}
+            <div className="mb-4">
+              <label className="label-field">Colegio</label>
+              <select
+                value={courseSchoolId}
+                onChange={(e) => setCourseSchoolId(e.target.value)}
+                className="input-field mt-1.5"
+              >
+                <option value="">Seleccioná colegio</option>
+                {schools.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {courseCreateMode === 'single' && courseSchoolId && (
+              <>
+                <div className="grid gap-4 sm:grid-cols-2 mb-4">
+                  <div>
+                    <label className="label-field">Nivel</label>
+                    <select
+                      value={courseSelLevel}
+                      onChange={(e) => { setCourseSelLevel(e.target.value); setCourseSelGrade(''); }}
+                      className="input-field mt-1.5"
+                    >
+                      <option value="">Seleccioná nivel</option>
+                      {Object.entries(COURSE_STRUCTURE).map(([key, data]) => (
+                        <option key={key} value={key}>{data.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label-field">Grado / Año</label>
+                    <select
+                      value={courseSelGrade}
+                      onChange={(e) => setCourseSelGrade(e.target.value)}
+                      className="input-field mt-1.5"
+                      disabled={!courseSelLevel}
+                    >
+                      <option value="">Seleccioná grado</option>
+                      {courseSelLevel && COURSE_STRUCTURE[courseSelLevel].grades.map((g) => (
+                        <option key={g.value} value={g.value}>{g.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <button
+                  onClick={handleCreateSingleCourse}
+                  disabled={!courseSelLevel || !courseSelGrade || courseCreating}
+                  className="btn-primary"
+                >
+                  {courseCreating ? 'Creando...' : 'Crear curso'}
+                </button>
+              </>
+            )}
+
+            {courseCreateMode === 'bulk' && courseSchoolId && (
+              <div>
+                <p className="text-sm text-surface-500 dark:text-surface-400 mb-3">
+                  Crea todos los cursos estándar (Primaria y Secundaria) con sus divisiones.
+                </p>
+                <button
+                  onClick={handleGenerateAllCourses}
+                  disabled={courseCreating}
+                  className="btn-primary"
+                >
+                  {courseCreating ? 'Generando...' : 'Generar todos los cursos'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Course list */}
+          <div className="card overflow-hidden">
+            <div className="px-5 py-3 border-b border-surface-200 dark:border-surface-700">
+              <h3 className="font-semibold text-surface-900 dark:text-surface-100">
+                Cursos existentes
+              </h3>
+            </div>
+            {!selectedSchoolId ? (
+              <div className="text-center py-8 text-surface-500 dark:text-surface-400">
+                Seleccioná un colegio en la pestaña "Cuadernillos" para ver sus cursos.
+              </div>
+            ) : (
+              (() => {
+                const schoolData = schools.find(s => s.id === selectedSchoolId);
+                const schoolCourses = schoolData?.courses || [];
+                if (schoolCourses.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-surface-500 dark:text-surface-400">
+                      Este colegio no tiene cursos todavía.
+                    </div>
+                  );
+                }
+                const levels = ['primaria', 'secundaria'];
+                return (
+                  <div className="divide-y divide-surface-100 dark:divide-surface-700">
+                    {levels.map(levelKey => {
+                      const levelData = COURSE_STRUCTURE[levelKey];
+                      const levelCourses = schoolCourses.filter(c =>
+                        c.name.startsWith(levelData.label)
+                      );
+                      if (levelCourses.length === 0) return null;
+                      return (
+                        <div key={levelKey} className="px-5 py-4">
+                          <h4 className="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2 uppercase tracking-wide">
+                            {levelData.label}
+                          </h4>
+                          <div className="space-y-2">
+                            {levelCourses.map(course => (
+                              <div
+                                key={course.id}
+                                className="flex items-center justify-between py-2 px-3 rounded-lg bg-surface-50 dark:bg-surface-800/50"
+                              >
+                                <div>
+                                  <span className="text-sm font-medium text-surface-900 dark:text-surface-100">
+                                    {course.name}
+                                  </span>
+                                  <span className="ml-2 text-xs text-surface-400">
+                                    ({course.divisions?.length || 0} divisiones)
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => handleDeleteCourse(course.id)}
+                                  className="text-red-600 hover:text-red-700 text-sm font-medium"
+                                >
+                                  Eliminar
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()
+            )}
+          </div>
+        </div>
       )}
 
       {/* Orders Tab */}
