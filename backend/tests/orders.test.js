@@ -304,13 +304,14 @@ describe('Admin: update order status', () => {
     expect(res.status).toBe(200);
   });
 
-  it('can set status back to pending (no transition validation)', async () => {
+  it('rejects invalid transition (delivered → pending)', async () => {
     const res = await agent
       .put(`/api/admin/orders/${createdOrderId}/status`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ status: 'pending' });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('ORD_003');
   });
 });
 

@@ -8,6 +8,7 @@ export const config = {
   jwtExpiration: process.env.JWT_EXPIRATION || '24h',
   mpAccessToken: process.env.MP_ACCESS_TOKEN || '',
   mpSandbox: process.env.MP_SANDBOX !== 'false',
+  mpWebhookSecret: process.env.MP_WEBHOOK_SECRET || '',
   logLevel: process.env.LOG_LEVEL || 'info',
 
   // Bank transfer details

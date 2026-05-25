@@ -1,7 +1,8 @@
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
+import crypto from 'crypto';
 
 export class MercadoPagoGateway {
-  constructor(accessToken, sandbox = true) {
+  constructor(accessToken, sandbox = true, webhookSecret = '') {
     this.client = new MercadoPagoConfig({
       accessToken,
       options: { timeout: 10000 },
@@ -9,6 +10,51 @@ export class MercadoPagoGateway {
     this.preference = new Preference(this.client);
     this.payment = new Payment(this.client);
     this.sandbox = sandbox;
+    this.webhookSecret = webhookSecret;
+  }
+
+  /**
+   * Validate Mercado Pago webhook X-Signature header.
+   * Uses HMAC-SHA256 with the webhook secret (configured in MP dashboard).
+   * Reference: https://www.mercadopago.com.ar/developers/en/docs/your-integrations/notifications/webhooks
+   */
+  validateWebhookSignature(headers, rawBody) {
+    const xSignature = headers['x-signature'];
+    const xRequestId = headers['x-request-id'];
+    if (!xSignature || !xRequestId) {
+      // If no webhook secret is configured, skip validation (dev mode)
+      if (!this.webhookSecret) return true;
+      return false;
+    }
+
+    // Parse X-Signature: ts=...,v1=...
+    const parts = {};
+    xSignature.split(',').forEach(p => {
+      const [key, val] = p.trim().split('=');
+      if (key && val) parts[key.trim()] = val.trim();
+    });
+
+    const ts = parts['ts'];
+    const hash = parts['v1'];
+    if (!ts || !hash) return false;
+
+    // Build manifest: "id:{data.id};request-id:{x-request-id};ts:{ts};"
+    let dataId;
+    try {
+      const body = JSON.parse(rawBody);
+      dataId = body.data?.id;
+    } catch { return false; }
+    if (!dataId) return false;
+
+    const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+
+    const expectedHash = crypto
+      .createHmac('sha256', this.webhookSecret)
+      .update(manifest)
+      .digest('hex')
+      .toLowerCase();
+
+    return hash.toLowerCase() === expectedHash;
   }
 
   async createPreference(externalRef, items, backURLs = {}) {
@@ -51,4 +97,19 @@ export class MercadoPagoGateway {
       transactionAmount: result.transaction_amount,
     };
   }
+}
+
+/**
+ * Singleton gateway — initialized once by server.js, importable from anywhere.
+ */
+let _gateway = null;
+
+export function initGateway(accessToken, sandbox, webhookSecret) {
+  _gateway = new MercadoPagoGateway(accessToken, sandbox, webhookSecret);
+  return _gateway;
+}
+
+export function getGateway() {
+  if (!_gateway) throw new Error('MercadoPagoGateway not initialized — call initGateway first');
+  return _gateway;
 }

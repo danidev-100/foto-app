@@ -1,11 +1,11 @@
 import app from './app.js';
 import { config } from './config.js';
-import { MercadoPagoGateway } from './lib/mercadopago.js';
+import { initGateway } from './lib/mercadopago.js';
 import { initPaymentService } from './controllers/payment.controller.js';
 import { prisma } from './lib/prisma.js';
 
-// ── Initialize Mercado Pago gateway ────────────────────────────────
-const mpGateway = new MercadoPagoGateway(config.mpAccessToken, config.mpSandbox);
+// ── Initialize Mercado Pago gateway (singleton) ─────────────────────
+const mpGateway = initGateway(config.mpAccessToken, config.mpSandbox, config.mpWebhookSecret);
 initPaymentService(mpGateway);
 
 // ── Start server ───────────────────────────────────────────────────

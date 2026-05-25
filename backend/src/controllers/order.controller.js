@@ -99,6 +99,7 @@ export class OrderController {
       return successJSON(res, 200, { message: 'order status updated' });
     } catch (err) {
       if (err.code === 'INF_001') return errorJSON(res, 404, 'INF_001', 'order not found');
+      if (err.code === 'ORD_003') return errorJSON(res, 409, 'ORD_003', err.message);
       return errorJSON(res, 500, 'INF_001', 'failed to update order status');
     }
   }

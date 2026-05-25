@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 
 import { healthCheck } from './controllers/health.controller.js';
@@ -10,6 +12,7 @@ import cartRoutes from './routes/cart.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import webhookRoutes from './routes/webhook.routes.js';
 import { errorMiddleware } from './middleware/error.js';
+import { authMiddleware } from './middleware/auth.js';
 import { getBankDetails } from './controllers/config.controller.js';
 import { prisma } from './lib/prisma.js';
 
@@ -94,7 +97,8 @@ async function ensureSchools() {
     );
     if (donBosco) {
       await prisma.$executeRawUnsafe(
-        `UPDATE courses SET school_id = '${donBosco.id}' WHERE school_id IS NULL`
+        `UPDATE courses SET school_id = $1 WHERE school_id IS NULL`,
+        donBosco.id
       );
       console.log(`Assigned ${nullCourses} orphan courses to ${donBosco.id}`);
     }
@@ -121,7 +125,8 @@ async function ensureSchools() {
     );
     if (firstSchool) {
       await prisma.$executeRawUnsafe(
-        `UPDATE booklets SET school_id = '${firstSchool.id}' WHERE school_id IS NULL`
+        `UPDATE booklets SET school_id = $1 WHERE school_id IS NULL`,
+        firstSchool.id
       );
       console.log(`Assigned ${nullBookletResult.cnt} orphan booklets to school ${firstSchool.id}`);
     }
@@ -176,14 +181,29 @@ app.use(async (_req, res, next) => {
   next();
 });
 
-// ── Global middleware ──────────────────────────────────────────────
+// ── Security middleware ────────────────────────────────────────────
+app.use(helmet());
 app.use(cors({
-  origin: '*',
+  origin: process.env.CORS_ORIGIN || 'http://localhost:80',
   methods: 'GET,POST,PUT,DELETE,PATCH',
   allowedHeaders: 'Content-Type,Authorization',
 }));
+
+// Rate limiting
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,                   // 20 attempts per window per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_001', message: 'demasiados intentos, intentá de nuevo en 15 minutos' } },
+});
+
+// Apply rate limiter to auth routes only (login/register)
+app.use('/api/auth', authLimiter);
+
+// ── General middleware ─────────────────────────────────────────────
 app.use(morgan('dev'));
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 
 // Convert Prisma Decimal objects to numbers for JSON serialization
 app.use((req, res, next) => {
@@ -216,8 +236,10 @@ function sanitizeDecimals(obj) {
 
 // ── Routes ─────────────────────────────────────────────────────────
 app.get('/api/health', healthCheck);
-app.get('/api/config/bank-details', getBankDetails);
 app.use('/api/auth', authRoutes);
+
+// Protected config routes (require auth)
+app.get('/api/config/bank-details', authMiddleware, getBankDetails);
 app.use('/api/catalog', catalogRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/cart', cartRoutes);

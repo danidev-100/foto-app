@@ -309,10 +309,33 @@ export class OrderService {
     return { order, items };
   }
 
-  async adminUpdateOrderStatus(orderId, status) {
+  async adminUpdateOrderStatus(orderId, newStatus) {
+    const VALID_TRANSITIONS = {
+      pending:    ['ready', 'cancelled'],
+      ready:      ['delivered', 'cancelled'],
+      delivered:  [],
+      cancelled:  [],
+    };
+
+    const order = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } });
+    if (!order) {
+      const err = new Error('order not found');
+      err.code = 'INF_001';
+      err.status = 404;
+      throw err;
+    }
+
+    const allowed = VALID_TRANSITIONS[order.status];
+    if (!allowed || !allowed.includes(newStatus)) {
+      const err = new Error(`cannot transition from '${order.status}' to '${newStatus}'`);
+      err.code = 'ORD_003';
+      err.status = 409;
+      throw err;
+    }
+
     const result = await prisma.order.updateMany({
       where: { id: orderId },
-      data: { status },
+      data: { status: newStatus },
     });
     if (result.count === 0) {
       const err = new Error('order not found');
