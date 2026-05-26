@@ -10,6 +10,7 @@ import catalogRoutes from './routes/catalog.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import cartRoutes from './routes/cart.routes.js';
 import orderRoutes from './routes/order.routes.js';
+import checkoutRoutes from './routes/checkout.routes.js';
 import webhookRoutes from './routes/webhook.routes.js';
 import { errorMiddleware } from './middleware/error.js';
 import { authMiddleware } from './middleware/auth.js';
@@ -52,6 +53,29 @@ async function ensureSchema() {
   if (!colResult?.e) {
     console.log('Init: adding courses.school_id');
     await prisma.$executeRawUnsafe(`ALTER TABLE courses ADD COLUMN school_id TEXT;`);
+  }
+
+  // Create pending_checkouts table if missing
+  const [pcResult] = await prisma.$queryRawUnsafe(
+    `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'pending_checkouts') AS e`
+  );
+  if (!pcResult?.e) {
+    console.log('Init: creating pending_checkouts table');
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE pending_checkouts (
+        id TEXT PRIMARY KEY,
+        student_id TEXT NOT NULL REFERENCES students(id),
+        total DECIMAL(10,2) NOT NULL,
+        items JSONB NOT NULL,
+        status VARCHAR(50) NOT NULL DEFAULT 'pending',
+        mp_preference_id VARCHAR(255),
+        expires_at TIMESTAMPTZ NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`CREATE INDEX idx_pending_checkouts_student_id ON pending_checkouts(student_id)`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX idx_pending_checkouts_status ON pending_checkouts(status)`);
   }
 
   // Add booklets.school_id if missing
@@ -290,6 +314,7 @@ app.use('/api/catalog', catalogRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/checkout', checkoutRoutes);
 app.use('/api/webhooks', webhookRoutes);
 
 

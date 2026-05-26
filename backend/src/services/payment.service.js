@@ -165,12 +165,22 @@ export class PaymentService {
     }
 
     const mpInfo = await this.gateway.getPaymentInfo(mpPaymentId);
-
-    // Find payment record by external_reference (order_id)
     if (!mpInfo.externalReference) return;
 
+    const extRef = mpInfo.externalReference;
+
+    // ── NEW FLOW: PendingCheckout (no order created yet) ────────────
+    const pendingCheckout = await prisma.pendingCheckout.findUnique({
+      where: { id: extRef },
+    });
+
+    if (pendingCheckout) {
+      return this._handlePendingCheckoutWebhook(pendingCheckout, mpInfo);
+    }
+
+    // ── OLD FLOW: Existing order with a Payment record ──────────────
     const payment = await prisma.payment.findFirst({
-      where: { externalReference: mpInfo.externalReference },
+      where: { externalReference: extRef },
     });
     if (!payment) return;
 
@@ -188,7 +198,17 @@ export class PaymentService {
       case 'rejected':
       case 'cancelled':
         paymentStatus = 'rejected';
-        orderStatus = 'pending';
+        orderStatus = 'cancelled';
+        // Restore stock when payment fails
+        const failedItems = await prisma.orderItem.findMany({
+          where: { orderId: payment.orderId },
+        });
+        for (const item of failedItems) {
+          await prisma.booklet.update({
+            where: { id: item.bookletId },
+            data: { stock: { increment: item.quantity } },
+          });
+        }
         break;
       case 'refunded':
         paymentStatus = 'refunded';
@@ -214,6 +234,128 @@ export class PaymentService {
         data: { paymentStatus: orderPaymentStatus, status: orderStatus },
       });
     }
+  }
+
+  // ── PendingCheckout webhook handling ─────────────────────────────────
+
+  async _handlePendingCheckoutWebhook(pendingCheckout, mpInfo) {
+    switch (mpInfo.status) {
+      case 'approved':
+        return this._completeCheckout(pendingCheckout);
+      case 'rejected':
+      case 'cancelled':
+      case 'refunded':
+        await prisma.pendingCheckout.update({
+          where: { id: pendingCheckout.id },
+          data: { status: 'failed' },
+        });
+        return;
+      default:
+        return; // "pending" or "in_process" — leave as-is
+    }
+  }
+
+  async _completeCheckout(pendingCheckout) {
+    const items = pendingCheckout.items;
+    const studentId = pendingCheckout.studentId;
+    const orderId = uuidv4();
+
+    // 1. Re-validate stock BEFORE creating anything (outside transaction)
+    for (const item of items) {
+      const booklet = await prisma.booklet.findFirst({
+        where: { id: item.bookletId },
+        select: { stock: true, isActive: true },
+      });
+      if (!booklet || !booklet.isActive || booklet.stock < item.quantity) {
+        await prisma.pendingCheckout.update({
+          where: { id: pendingCheckout.id },
+          data: { status: 'failed' },
+        });
+        console.error(
+          `[MP Checkout] Stock shortage for booklet ${item.bookletId} ` +
+          `(need ${item.quantity}, have ${booklet?.stock ?? 0}). ` +
+          `PendingCheckout ${pendingCheckout.id} marked as failed. ` +
+          `User was charged but no order created — needs admin refund.`
+        );
+        return;
+      }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 2. Create order
+      await tx.order.create({
+        data: {
+          id: orderId,
+          studentId,
+          total: pendingCheckout.total,
+          status: 'pending',
+          paymentMethod: 'mercadopago',
+          paymentStatus: 'paid',
+        },
+      });
+
+      // 3. Create order items + decrement stock + compute delivery
+      let maxDeliveryDays = 0;
+
+      for (const item of items) {
+        await tx.orderItem.create({
+          data: {
+            id: uuidv4(),
+            orderId,
+            bookletId: item.bookletId,
+            title: item.title,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            deliveryDays: item.deliveryDays,
+          },
+        });
+
+        await tx.booklet.update({
+          where: { id: item.bookletId },
+          data: { stock: { decrement: item.quantity } },
+        });
+
+        if (item.deliveryDays && item.deliveryDays > maxDeliveryDays) {
+          maxDeliveryDays = item.deliveryDays;
+        }
+      }
+
+      // 4. Set delivery date
+      if (maxDeliveryDays > 0) {
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            deliveryDate: new Date(Date.now() + maxDeliveryDays * 24 * 60 * 60 * 1000),
+          },
+        });
+      }
+
+      // 5. Create payment record
+      await tx.payment.create({
+        data: {
+          id: uuidv4(),
+          orderId,
+          method: 'mercadopago',
+          status: 'approved',
+          amount: pendingCheckout.total,
+          externalReference: pendingCheckout.id,
+          mpPaymentId: pendingCheckout.mpPreferenceId,
+          paidAt: new Date(),
+        },
+      });
+
+      // 6. Clear the student's cart
+      const cart = await tx.cart.findFirst({ where: { studentId } });
+      if (cart) {
+        await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+      }
+
+      // 7. Mark pending checkout as completed
+      await tx.pendingCheckout.update({
+        where: { id: pendingCheckout.id },
+        data: { status: 'completed' },
+      });
+    });
   }
 
   mapMpPaymentStatus(status) {

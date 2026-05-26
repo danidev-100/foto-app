@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getOrders, cancelOrder, initiatePayment } from '../api/orders';
 
 const statusConfig = {
@@ -22,16 +22,64 @@ const methodLabels = {
 export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [mpStatus, setMpStatus] = useState(null); // 'success' | 'failure' | 'pending'
   const [actionLoading, setActionLoading] = useState(null);
-  useEffect(() => {
-    getOrders().then(({ data }) => {
-      // Backend returns { order, items } structure, flatten to include items in order
-      const orders = (data.data || []).map(d => ({
+  const pollRef = useRef(null);
+
+  const loadOrders = async (quiet) => {
+    if (!quiet) setLoading(true);
+    try {
+      const { data } = await getOrders();
+      const flat = (data.data || []).map(d => ({
         ...d.order,
         items: d.items || []
       }));
-      setOrders(orders);
-    }).finally(() => setLoading(false));
+      setOrders(flat);
+      // If polling for MP success and orders appeared, stop polling
+      if (pollRef.current && flat.length > 0) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+        setMpStatus(null);
+      }
+      return flat;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Check MP redirect param
+    const params = new URLSearchParams(window.location.search);
+    const redirect = params.get('mp_redirect');
+
+    if (redirect === 'success') {
+      setMpStatus('success');
+      // Clean URL
+      window.history.replaceState({}, '', '/orders');
+      // Load orders and poll until the webhook creates the order
+      loadOrders().then((flat) => {
+        if (flat.length === 0) {
+          pollRef.current = setInterval(async () => {
+            const result = await loadOrders(true);
+            if (result.length > 0) {
+              clearInterval(pollRef.current);
+              pollRef.current = null;
+              setMpStatus(null);
+            }
+          }, 2000);
+        }
+      });
+    } else if (redirect === 'failure') {
+      setMpStatus('failure');
+      window.history.replaceState({}, '', '/orders');
+      loadOrders();
+    } else {
+      loadOrders();
+    }
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
   }, []);
 
   const handleCancel = async (id) => {
@@ -62,7 +110,7 @@ export default function Orders() {
   const formatPrice = (cents) => `$${(toNum(cents) / 100).toLocaleString('es-AR')}`;
   const formatDate = (date) => new Date(date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
 
-  if (loading) {
+  if (loading && mpStatus !== 'success') {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
@@ -77,7 +125,42 @@ export default function Orders() {
         <p className="mt-1 text-surface-500 dark:text-surface-400">Seguimiento de tus encargos de cuadernillos.</p>
       </div>
 
-      {orders.length === 0 ? (
+      {mpStatus === 'success' && orders.length === 0 && (
+        <div className="card p-6 mb-6 text-center">
+          <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-100">Procesando tu pago...</h3>
+          <p className="mt-1 text-surface-500 dark:text-surface-400">
+            El pago se realizó con éxito. Estamos verificando la transacción, en unos segundos aparecerá tu pedido.
+          </p>
+        </div>
+      )}
+
+      {mpStatus === 'failure' && (
+        <div className="card p-6 mb-6 border-red-200 dark:border-red-800 text-center">
+          <div className="w-16 h-16 bg-red-50 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-100">El pago no se pudo completar</h3>
+          <p className="mt-1 text-surface-500 dark:text-surface-400">
+            El pago con Mercado Pago no se realizó. No se creó ningún pedido.
+            {orders.length === 0 && ' Volvé al catálogo para intentar de nuevo.'}
+          </p>
+          {orders.length === 0 && (
+            <button onClick={() => window.location.href = '/'} className="btn-primary mt-6">
+              Ver cuadernillos
+            </button>
+          )}
+        </div>
+      )}
+
+      {orders.length === 0 && !mpStatus ? (
         <div className="text-center py-16">
           <div className="w-20 h-20 bg-surface-100 dark:bg-surface-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <svg className="w-10 h-10 text-surface-400 dark:text-surface-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -95,7 +178,7 @@ export default function Orders() {
           {orders.map((order) => {
             const status = statusConfig[order.status] || statusConfig.pending;
             const payment = paymentConfig[order.payment_status] || paymentConfig.pending;
-            const showPayButton = order.payment_method === 'mercadopago' && order.payment_status !== 'paid';
+            const showPayButton = order.payment_method === 'mercadopago' && order.payment_status !== 'paid' && order.status !== 'cancelled';
             const showCancelButton = order.status === 'pending';
             const isLoading = actionLoading === `cancel-${order.id}` || actionLoading === `pay-${order.id}`;
 

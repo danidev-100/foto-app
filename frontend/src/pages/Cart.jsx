@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getCart, updateCartItem, removeFromCart, clearCart } from '../api/cart';
-import { placeOrder, initiatePayment } from '../api/orders';
+import { placeOrder, initMPCheckout } from '../api/orders';
 import { useNavigate } from 'react-router-dom';
 
 export default function Cart() {
@@ -35,25 +35,23 @@ export default function Cart() {
   const handleCheckout = async (method) => {
     setProcessing(true);
     try {
-      // 1. Create order with selected payment method
-      const orderRes = await placeOrder({ payment_method: method });
-      const orderId = orderRes.data.data.id;
-
       if (method === 'mercadopago') {
-        // 2. Initiate payment to get MP redirect URL
-        const payRes = await initiatePayment(orderId, 'mercadopago');
-        const paymentUrl = payRes.data.data.paymentUrl || payRes.data.data.payment_url;
-
-        // 3. Redirect to Mercado Pago
+        // NEW: Init MP checkout WITHOUT creating an order first.
+        // Order is only created by the webhook when MP confirms payment.
+        // If payment fails, no order is ever created — cart stays intact.
+        const res = await initMPCheckout();
+        const paymentUrl = res.data.data.paymentUrl;
         if (paymentUrl) {
           window.location.href = paymentUrl;
         } else {
           navigate('/orders');
         }
-      } else {
-        // Cash payment - order created, redirect to orders
-        navigate('/orders');
+        return;
       }
+
+      // Cash: create order first (unchanged — admin confirms payment manually)
+      await placeOrder({ payment_method: method });
+      navigate('/orders');
     } catch (error) {
       console.error('Checkout failed:', error);
       const msg = error?.response?.data?.error?.message || error.message || 'Error al procesar el pago';

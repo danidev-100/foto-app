@@ -209,6 +209,20 @@ model Payment {
   @@map("payments")
 }
 
+model PendingCheckout {
+  id              String    @id @default(uuid())
+  studentId       String    @map("student_id")
+  total           Decimal   @db.Decimal(10, 2)
+  items           Json      @map("items")
+  status          String    @default("pending") @db.VarChar(50)
+  mpPreferenceId  String?   @map("mp_preference_id") @db.VarChar(255)
+  expiresAt       DateTime  @map("expires_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("pending_checkouts")
+}
+
 model PaymentEvent {
   id          String    @id @default(uuid())
   orderId     String?   @map("order_id")

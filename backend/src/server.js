@@ -2,11 +2,13 @@ import app from './app.js';
 import { config } from './config.js';
 import { initGateway } from './lib/mercadopago.js';
 import { initPaymentService } from './controllers/payment.controller.js';
+import { initCheckoutService } from './controllers/checkout.controller.js';
 import { prisma } from './lib/prisma.js';
 
 // ── Initialize Mercado Pago gateway (singleton) ─────────────────────
 const mpGateway = initGateway(config.mpAccessToken, config.mpSandbox, config.mpWebhookSecret);
 initPaymentService(mpGateway);
+initCheckoutService(mpGateway);
 
 // ── Start server ───────────────────────────────────────────────────
 const PORT = config.port;
