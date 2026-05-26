@@ -145,7 +145,11 @@ function Layout({ children }) {
                 )}
               </div>
               <button
-                onClick={logout}
+                onClick={() => {
+                  if (window.confirm('¿Estás seguro de que querés salir?')) {
+                    logout();
+                  }
+                }}
                 className="text-sm text-surface-400 hover:text-red-600 transition-colors"
                 title="Cerrar sesión"
               >
