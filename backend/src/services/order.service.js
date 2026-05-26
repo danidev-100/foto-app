@@ -272,6 +272,13 @@ export class OrderService {
     const items = await prisma.orderItem.findMany({
       where: { orderId: { in: orderIds } },
       orderBy: { createdAt: 'asc' },
+      include: {
+        booklet: {
+          include: {
+            school: true,
+          },
+        },
+      },
     });
 
     const itemsMap = {};
@@ -283,9 +290,16 @@ export class OrderService {
     const studentNames = {};
     const result = orders.map((o) => {
       studentNames[o.student.id] = o.student.name;
+      const orderItems = itemsMap[o.id] || [];
+
+      // Determine school: prefer student's course school, fall back to booklet school
+      const schoolFromStudent = o.student?.course?.school || null;
+      const schoolFromItems = orderItems.find(i => i.booklet?.school)?.booklet?.school || null;
+
       return {
         order: o,
-        items: itemsMap[o.id] || [],
+        items: orderItems,
+        school: schoolFromStudent || schoolFromItems,
       };
     });
 

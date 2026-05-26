@@ -586,7 +586,7 @@ export default function Admin() {
 
   // Group orders by school
   const groupedOrders = orders.reduce((acc, od) => {
-    const schoolName = od.order.student?.course?.school?.name || 'Sin colegio';
+    const schoolName = od.school?.name || od.order.student?.course?.school?.name || 'Sin colegio';
     if (!acc[schoolName]) acc[schoolName] = [];
     acc[schoolName].push(od);
     return acc;
@@ -1451,7 +1451,7 @@ export default function Admin() {
                           const order = orderData.order;
                           const items = orderData.items || [];
                           const studentName = studentNames[order.studentId] || '—';
-                          const courseSchool = order.student?.course?.school;
+                          const courseSchool = orderData.school || order.student?.course?.school;
                           return (
                             <tr key={order.id} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
                               <td className="px-5 py-3">

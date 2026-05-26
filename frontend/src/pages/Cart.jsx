@@ -97,7 +97,7 @@ export default function Cart() {
           <h1 className="text-2xl font-bold text-surface-900">Mi Carrito</h1>
           <p className="mt-1 text-surface-500">{cart.items.length} {cart.items.length === 1 ? 'item' : 'items'}</p>
         </div>
-        <button onClick={clearCart} className="btn-secondary text-red-600 hover:text-red-700 hover:bg-red-50 ring-red-200">
+        <button onClick={() => clearCart().then(() => getCart().then(({ data }) => setCart(data.data)))} className="btn-secondary text-red-600 hover:text-red-700 hover:bg-red-50 ring-red-200">
           Vaciar carrito
         </button>
       </div>
