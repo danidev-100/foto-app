@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../lib/prisma.js';
+import { config } from '../config.js';
 
 /**
  * CheckoutService handles the initial phase of MP checkout:
@@ -101,14 +102,10 @@ export class CheckoutService {
         currencyId: 'ARS',
       }));
 
-      const baseUrl = process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : 'http://localhost:3000';
-
       const pref = await this.gateway.createPreference(checkout.id, mpItems, {
-        success: `${baseUrl}/orders?mp_redirect=success`,
-        failure: `${baseUrl}/orders?mp_redirect=failure`,
-        pending: `${baseUrl}/orders?mp_redirect=pending`,
+        success: `${config.frontendUrl}/orders?mp_redirect=success`,
+        failure: `${config.frontendUrl}/orders?mp_redirect=failure`,
+        pending: `${config.frontendUrl}/orders?mp_redirect=pending`,
       });
 
       // 7. Save the MP preference id

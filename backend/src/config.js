@@ -9,6 +9,10 @@ export const config = {
   mpAccessToken: process.env.MP_ACCESS_TOKEN || '',
   mpSandbox: process.env.MP_SANDBOX !== 'false',
   mpWebhookSecret: process.env.MP_WEBHOOK_SECRET || '',
+  frontendUrl: process.env.FRONTEND_URL
+    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+    || process.env.CORS_ORIGIN
+    || 'http://localhost:80',
   logLevel: process.env.LOG_LEVEL || 'info',
 
   // Bank transfer details

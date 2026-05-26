@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../lib/prisma.js';
+import { config } from '../config.js';
 
 export class PaymentService {
   constructor(gateway) {
@@ -71,14 +72,10 @@ export class PaymentService {
       currencyId: 'ARS',
     }));
 
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000';
-
     const pref = await this.gateway.createPreference(order.id, mpItems, {
-      success: `${baseUrl}/orders`,
-      failure: `${baseUrl}/orders`,
-      pending: `${baseUrl}/orders`,
+      success: `${config.frontendUrl}/orders`,
+      failure: `${config.frontendUrl}/orders`,
+      pending: `${config.frontendUrl}/orders`,
     });
 
     const payment = await prisma.payment.create({
