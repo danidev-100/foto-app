@@ -260,8 +260,28 @@ export class CatalogService {
       throw err;
     }
 
-    return prisma.booklet.create({
-      data: { schoolId, courseId, divisionId, title, description, currentPrice, stock, imageUrl, isActive },
+    return prisma.$transaction(async (tx) => {
+      const booklet = await tx.booklet.create({
+        data: { schoolId, courseId, divisionId, title, description, currentPrice, stock, imageUrl, isActive },
+      });
+
+      // Auto-create progress records for all active students in the course
+      const students = await tx.student.findMany({
+        where: { courseId, isActive: true },
+        select: { id: true },
+      });
+
+      if (students.length > 0) {
+        await tx.studentBookletProgress.createMany({
+          data: students.map((s) => ({
+            studentId: s.id,
+            bookletId: booklet.id,
+            status: 'pending',
+          })),
+        });
+      }
+
+      return booklet;
     });
   }
 
