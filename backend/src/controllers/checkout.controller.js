@@ -16,6 +16,7 @@ export class CheckoutController {
     } catch (err) {
       if (err.code === 'CART_002') return errorJSON(res, 400, 'CART_002', 'cart is empty');
       if (err.code === 'CART_001') return errorJSON(res, 400, 'CART_001', 'insufficient stock for one or more items');
+      console.error('[MP_CHECKOUT_ERROR]', err?.cause || err.message || err);
       return errorJSON(res, 500, 'INF_001', 'failed to initialize checkout');
     }
   }
