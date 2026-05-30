@@ -31,6 +31,11 @@ enum PaymentStatus {
   refunded
 }
 
+enum ProgressStatus {
+  pending
+  completed
+}
+
 // ============================================================================
 // Models
 // ============================================================================
@@ -95,6 +100,7 @@ model Student {
   course        Course?   @relation(fields: [courseId], references: [id])
   cart          Cart?
   orders        Order[]
+  progress      StudentBookletProgress[]
 
   @@map("students")
 }
@@ -118,8 +124,24 @@ model Booklet {
   division     Division  @relation(fields: [divisionId], references: [id])
   cartItems    CartItem[]
   orderItems   OrderItem[]
+  progress     StudentBookletProgress[]
 
   @@map("booklets")
+}
+
+model StudentBookletProgress {
+  id        String         @id @default(uuid())
+  studentId String         @map("student_id")
+  bookletId String         @map("booklet_id")
+  status    ProgressStatus @default(pending)
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  student   Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  booklet   Booklet        @relation(fields: [bookletId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, bookletId])
+  @@map("student_booklet_progress")
 }
 
 model Cart {

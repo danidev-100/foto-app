@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { CatalogController } from '../controllers/catalog.controller.js';
 import { UserController } from '../controllers/user.controller.js';
 import { OrderController } from '../controllers/order.controller.js';
+import { ProgressController } from '../controllers/progress.controller.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 
 const router = Router();
@@ -11,6 +12,7 @@ router.use(adminMiddleware);
 const catalog = new CatalogController();
 const userController = new UserController();
 const orderController = new OrderController();
+const progressController = new ProgressController();
 
 // Schools
 router.get('/schools', (req, res) => catalog.listSchools(req, res));
@@ -33,6 +35,11 @@ router.get('/booklets', (req, res) => catalog.listBookletsAdmin(req, res));
 router.post('/booklets', (req, res) => catalog.createBooklet(req, res));
 router.put('/booklets/:id', (req, res) => catalog.updateBooklet(req, res));
 router.delete('/booklets/:id', (req, res) => catalog.deleteBooklet(req, res));
+
+// Progress
+router.get('/progress', (req, res) => progressController.getSummary(req, res));
+router.get('/progress/:bookletId', (req, res) => progressController.getBookletDetail(req, res));
+router.patch('/progress/:id', (req, res) => progressController.updateProgress(req, res));
 
 // Students
 router.get('/students', (req, res) => userController.listStudents(req, res));
