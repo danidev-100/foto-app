@@ -8,6 +8,7 @@ import {
 } from '../api/admin';
 import { listStudents, updateStudent } from '../api/students';
 import api from '../api/client';
+import ContabilidadTab from './ContabilidadTab';
 
 // Structured course data: level -> grades -> divisions
 const COURSE_STRUCTURE = {
@@ -654,6 +655,16 @@ export default function Admin() {
           }`}
         >
           Usuarios
+        </button>
+        <button
+          onClick={() => setActiveTab('contabilidad')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === 'contabilidad'
+              ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-300 dark:ring-primary-700'
+              : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700'
+          }`}
+        >
+          Contabilidad
         </button>
       </div>
 
@@ -1606,6 +1617,9 @@ export default function Admin() {
           )}
         </div>
       )}
+
+      {/* Contabilidad Tab */}
+      {activeTab === 'contabilidad' && <ContabilidadTab />}
     </div>
   );
 }
