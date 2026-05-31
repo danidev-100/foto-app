@@ -125,6 +125,51 @@ export class ProgressService {
       throw err;
     }
 
+    const delta = quantity - booklet.printedQuantity;
+
+    if (delta > 0) {
+      const pendingItems = await prisma.orderItem.findMany({
+        where: { bookletId, status: 'pending' },
+        orderBy: { createdAt: 'asc' },
+        include: { order: { select: { status: true } } },
+      });
+
+      let remaining = delta;
+      const toAdvance = [];
+      const orderIds = new Set();
+      for (const item of pendingItems) {
+        if (remaining >= item.quantity) {
+          toAdvance.push(item.id);
+          orderIds.add(item.orderId);
+          remaining -= item.quantity;
+        } else {
+          break; // don't partial-split items
+        }
+      }
+
+      if (toAdvance.length > 0) {
+        await prisma.orderItem.updateMany({
+          where: { id: { in: toAdvance } },
+          data: { status: 'ready' },
+        });
+
+        // Auto-advance orders whose ALL items are now ready/delivered
+        for (const orderId of orderIds) {
+          const items = await prisma.orderItem.findMany({
+            where: { orderId },
+            select: { status: true },
+          });
+          const allDone = items.every((i) => i.status === 'ready' || i.status === 'delivered');
+          if (allDone) {
+            await prisma.order.update({
+              where: { id: orderId },
+              data: { status: 'ready' },
+            });
+          }
+        }
+      }
+    }
+
     return prisma.booklet.update({
       where: { id: bookletId },
       data: { printedQuantity: quantity },

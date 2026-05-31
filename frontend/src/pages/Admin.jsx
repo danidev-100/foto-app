@@ -1284,6 +1284,17 @@ export default function Admin() {
                           <div key={item.id} className="flex items-center gap-2 text-surface-600 dark:text-surface-400">
                             <span className="text-xs bg-surface-100 dark:bg-surface-700 px-1.5 py-0.5 rounded">{item.quantity}x</span>
                             <span className="text-sm">{item.title}</span>
+                            {item.status && item.status !== 'pending' && (
+                              <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                                item.status === 'ready'
+                                  ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                                  : item.status === 'delivered'
+                                    ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                    : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                              }`}>
+                                {item.status === 'ready' ? 'Listo' : item.status === 'delivered' ? 'Entregado' : 'Cancelado'}
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -1490,6 +1501,17 @@ export default function Admin() {
                                     <div key={item.id} className="flex items-center gap-2 text-surface-600 dark:text-surface-400">
                                       <span className="text-xs bg-surface-100 dark:bg-surface-700 px-1.5 py-0.5 rounded">{item.quantity}x</span>
                                       <span className="text-sm">{item.title}</span>
+                                      {item.status && item.status !== 'pending' && (
+                                        <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                                          item.status === 'ready'
+                                            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                                            : item.status === 'delivered'
+                                              ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                              : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                        }`}>
+                                          {item.status === 'ready' ? 'Listo' : item.status === 'delivered' ? 'Entregado' : 'Cancelado'}
+                                        </span>
+                                      )}
                                     </div>
                                   ))}
                                 </div>

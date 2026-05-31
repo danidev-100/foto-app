@@ -202,17 +202,23 @@ export default function Orders() {
                 {/* Items */}
                 <div className="px-5 py-4">
                   <div className="space-y-3">
-                    {order.items?.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-surface-100 dark:bg-surface-700 rounded-lg flex items-center justify-center">
-                            <span className="text-sm font-medium text-surface-500 dark:text-surface-400">{item.quantity}x</span>
+                    {order.items?.map((item) => {
+                      const itemStatus = statusConfig[item.status] || statusConfig.pending;
+                      return (
+                        <div key={item.id} className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-surface-100 dark:bg-surface-700 rounded-lg flex items-center justify-center">
+                              <span className="text-sm font-medium text-surface-500 dark:text-surface-400">{item.quantity}x</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm text-surface-700 dark:text-surface-300">{item.title}</span>
+                              <span className={`mt-0.5 text-xs ${itemStatus.className}`}>{itemStatus.label}</span>
+                            </div>
                           </div>
-                          <span className="text-sm text-surface-700 dark:text-surface-300">{item.title}</span>
+                          <span className="text-sm font-medium text-surface-900 dark:text-surface-100">{formatPrice(item.unitPrice * item.quantity)}</span>
                         </div>
-                        <span className="text-sm font-medium text-surface-900 dark:text-surface-100">{formatPrice(item.unitPrice * item.quantity)}</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
