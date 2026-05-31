@@ -40,6 +40,7 @@ router.delete('/booklets/:id', (req, res) => catalog.deleteBooklet(req, res));
 router.get('/progress', (req, res) => progressController.getSummary(req, res));
 router.get('/progress/:bookletId', (req, res) => progressController.getBookletDetail(req, res));
 router.patch('/progress/:id', (req, res) => progressController.updateProgress(req, res));
+router.put('/progress/:bookletId/printed-quantity', (req, res) => progressController.setPrintedQuantity(req, res));
 
 // Students
 router.get('/students', (req, res) => userController.listStudents(req, res));

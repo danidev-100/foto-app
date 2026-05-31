@@ -3,32 +3,31 @@ import {
   adminGetProgressSummary,
   adminGetBookletProgress,
   adminUpdateProgress,
-  adminGetSchools,
+  adminSetPrintedQuantity,
 } from '../api/admin';
 
 export default function ContabilidadTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [schools, setSchools] = useState([]);
-  const [selectedSchoolId, setSelectedSchoolId] = useState('');
+  const [activeTab, setActiveTab] = useState('progreso');
   const [progressSummary, setProgressSummary] = useState([]);
+  const [selectedSchoolId, setSelectedSchoolId] = useState('');
   const [selectedBooklet, setSelectedBooklet] = useState(null);
   const [bookletDetail, setBookletDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [togglingIds, setTogglingIds] = useState(new Set());
+  const [editingPrinted, setEditingPrinted] = useState(null);
+  const [editValue, setEditValue] = useState('');
+  const [savingId, setSavingId] = useState(null);
 
   const loadData = async (schoolId) => {
     setLoading(true);
     setError(null);
     try {
-      const [schoolsRes, progressRes] = await Promise.all([
-        adminGetSchools(),
-        adminGetProgressSummary(schoolId || undefined),
-      ]);
-      setSchools(schoolsRes.data.data || []);
-      setProgressSummary(progressRes.data.data || []);
+      const res = await adminGetProgressSummary(schoolId || undefined);
+      setProgressSummary(res.data.data || []);
     } catch {
-      setError('Error al cargar datos de progreso');
+      setError('Error al cargar datos');
     } finally {
       setLoading(false);
     }
@@ -38,7 +37,7 @@ export default function ContabilidadTab() {
     loadData();
   }, []);
 
-  const handleSchoolChange = async (schoolId) => {
+  const handleSchoolChange = (schoolId) => {
     setSelectedSchoolId(schoolId);
     setSelectedBooklet(null);
     setBookletDetail(null);
@@ -68,7 +67,6 @@ export default function ContabilidadTab() {
   const handleToggle = async (student) => {
     const newStatus = student.status === 'completed' ? 'pending' : 'completed';
 
-    // Optimistic update
     setBookletDetail((prev) => {
       if (!prev) return prev;
       return {
@@ -84,7 +82,6 @@ export default function ContabilidadTab() {
     try {
       await adminUpdateProgress(student.progress_id, newStatus);
     } catch {
-      // Revert on error
       setBookletDetail((prev) => {
         if (!prev) return prev;
         return {
@@ -103,9 +100,45 @@ export default function ContabilidadTab() {
     }
   };
 
-  // Filter summary by selected school
+  const handleStartEdit = (booklet) => {
+    setEditingPrinted(booklet.booklet_id);
+    setEditValue(String(booklet.printed_quantity));
+  };
+
+  const handleSavePrinted = async (bookletId) => {
+    const qty = parseInt(editValue, 10);
+    if (isNaN(qty) || qty < 0) return;
+
+    setSavingId(bookletId);
+    try {
+      await adminSetPrintedQuantity(bookletId, qty);
+      setProgressSummary((prev) =>
+        prev.map((b) =>
+          b.booklet_id === bookletId
+            ? { ...b, printed_quantity: qty, faltantes: Math.max(0, b.active_orders - qty) }
+            : b
+        )
+      );
+    } catch {
+      setError('Error al guardar cantidad impresa');
+    } finally {
+      setSavingId(null);
+      setEditingPrinted(null);
+    }
+  };
+
+  const handleKeyDown = (e, bookletId) => {
+    if (e.key === 'Enter') handleSavePrinted(bookletId);
+    if (e.key === 'Escape') setEditingPrinted(null);
+  };
+
+  // Derive schools list from summary data
+  const schools = [...new Map(
+    progressSummary.map((b) => [b.school_name, { name: b.school_name }])
+  ).values()];
+
   const filteredSummary = selectedSchoolId
-    ? progressSummary.filter((b) => b.school_name === schools.find((s) => s.id === selectedSchoolId)?.name)
+    ? progressSummary.filter((b) => b.school_name === schools.find((s) => s.name === selectedSchoolId)?.name)
     : progressSummary;
 
   // ── Loading State ──
@@ -117,7 +150,7 @@ export default function ContabilidadTab() {
     );
   }
 
-  // ── Error State ──
+  // ── Error Toast ──
   if (error) {
     return (
       <div className="fixed top-4 right-4 z-50 rounded-xl px-4 py-3 shadow-lg ring-1 bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300 ring-red-200 dark:ring-red-800">
@@ -126,8 +159,8 @@ export default function ContabilidadTab() {
     );
   }
 
-  // ── Detail View ──
-  if (selectedBooklet) {
+  // ── Detail View (Progreso) ──
+  if (selectedBooklet && activeTab === 'progreso') {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
@@ -166,9 +199,7 @@ export default function ContabilidadTab() {
                 <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
                   {bookletDetail.students.map((s) => (
                     <tr key={s.progress_id} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
-                      <td className="px-5 py-3 font-medium text-surface-900 dark:text-surface-100">
-                        {s.student_name}
-                      </td>
+                      <td className="px-5 py-3 font-medium text-surface-900 dark:text-surface-100">{s.student_name}</td>
                       <td className="px-5 py-3">
                         <span
                           className={`badge ${
@@ -212,10 +243,34 @@ export default function ContabilidadTab() {
     );
   }
 
-  // ── Summary View (default) ──
+  // ── Main View ──
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-surface-900 dark:text-surface-100">Contabilidad</h2>
+
+      {/* Sub-tabs */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => { setActiveTab('progreso'); setSelectedBooklet(null); }}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === 'progreso'
+              ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-300 dark:ring-primary-700'
+              : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700'
+          }`}
+        >
+          Progreso
+        </button>
+        <button
+          onClick={() => { setActiveTab('produccion'); setSelectedBooklet(null); }}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === 'produccion'
+              ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-300 dark:ring-primary-700'
+              : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700'
+          }`}
+        >
+          Producción
+        </button>
+      </div>
 
       {/* School selector */}
       <div className="card p-5">
@@ -226,76 +281,145 @@ export default function ContabilidadTab() {
           className="input-field mt-1.5"
         >
           <option value="">Todos los colegios</option>
-          {schools.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
+          {progressSummary
+            .filter((b, i, arr) => arr.findIndex((x) => x.school_name === b.school_name) === i)
+            .map((b) => (
+              <option key={b.school_name} value={b.school_name}>
+                {b.school_name}
+              </option>
+            ))}
         </select>
       </div>
 
-      {/* Progress summary table */}
-      <div className="card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
-            <tr>
-              <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Cuadernillo</th>
-              <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Curso</th>
-              <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Progreso</th>
-              <th className="text-right px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Pendientes</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
-            {filteredSummary.map((b) => (
-              <tr
-                key={b.booklet_id}
-                onClick={() => handleRowClick(b.booklet_id)}
-                className="hover:bg-surface-50 dark:hover:bg-surface-800/50 cursor-pointer"
-              >
-                <td className="px-5 py-3 font-medium text-surface-900 dark:text-surface-100">
-                  {b.booklet_title}
-                </td>
-                <td className="px-5 py-3 text-surface-500 dark:text-surface-400">
-                  {b.course_name}
-                </td>
-                <td className="px-5 py-3">
-                  <div className="flex items-center gap-3">
-                    {/* Progress bar */}
-                    <div className="flex-1 h-2 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden max-w-[120px]">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          b.percentage === 100
-                            ? 'bg-green-500'
-                            : b.percentage > 50
-                              ? 'bg-primary-500'
-                              : 'bg-amber-500'
-                        }`}
-                        style={{ width: `${b.percentage}%` }}
-                      />
-                    </div>
-                    <span className="text-xs font-medium text-surface-700 dark:text-surface-300 whitespace-nowrap">
-                      {b.completed}/{b.total_students}
-                    </span>
-                    <span className="text-xs text-surface-500 dark:text-surface-400 whitespace-nowrap">
-                      {b.percentage}%
-                    </span>
-                  </div>
-                </td>
-                <td className="px-5 py-3 text-right">
-                  <span className="text-sm font-medium text-surface-900 dark:text-surface-100">
-                    {b.pending}
-                  </span>
-                </td>
+      {/* ── Tab: Progreso ── */}
+      {activeTab === 'progreso' && (
+        <div className="card overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
+              <tr>
+                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Cuadernillo</th>
+                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Curso</th>
+                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Progreso</th>
+                <th className="text-right px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Pendientes</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {filteredSummary.length === 0 && (
-          <div className="text-center py-8 text-surface-500 dark:text-surface-400">
-            No hay cuadernillos
-          </div>
-        )}
-      </div>
+            </thead>
+            <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
+              {filteredSummary.map((b) => (
+                <tr
+                  key={b.booklet_id}
+                  onClick={() => handleRowClick(b.booklet_id)}
+                  className="hover:bg-surface-50 dark:hover:bg-surface-800/50 cursor-pointer"
+                >
+                  <td className="px-5 py-3 font-medium text-surface-900 dark:text-surface-100">{b.booklet_title}</td>
+                  <td className="px-5 py-3 text-surface-500 dark:text-surface-400">{b.course_name}</td>
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-2 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden max-w-[120px]">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            b.percentage === 100
+                              ? 'bg-green-500'
+                              : b.percentage > 50
+                                ? 'bg-primary-500'
+                                : 'bg-amber-500'
+                          }`}
+                          style={{ width: `${b.percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-medium text-surface-700 dark:text-surface-300 whitespace-nowrap">
+                        {b.completed}/{b.total_students}
+                      </span>
+                      <span className="text-xs text-surface-500 dark:text-surface-400 whitespace-nowrap">
+                        {b.percentage}%
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <span className="text-sm font-medium text-surface-900 dark:text-surface-100">{b.pending}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filteredSummary.length === 0 && (
+            <div className="text-center py-8 text-surface-500 dark:text-surface-400">No hay cuadernillos</div>
+          )}
+        </div>
+      )}
+
+      {/* ── Tab: Producción ── */}
+      {activeTab === 'produccion' && (
+        <div className="card overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
+              <tr>
+                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Cuadernillo</th>
+                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Curso</th>
+                <th className="text-center px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Impresos</th>
+                <th className="text-center px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Pedidos</th>
+                <th className="text-center px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Faltantes</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
+              {filteredSummary.map((b) => (
+                <tr key={b.booklet_id} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
+                  <td className="px-5 py-3 font-medium text-surface-900 dark:text-surface-100">{b.booklet_title}</td>
+                  <td className="px-5 py-3 text-surface-500 dark:text-surface-400">{b.course_name}</td>
+                  <td className="px-5 py-3 text-center">
+                    {editingPrinted === b.booklet_id ? (
+                      <div className="flex items-center justify-center gap-1">
+                        <input
+                          type="number"
+                          min="0"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, b.booklet_id)}
+                          className="w-20 text-center input-field py-1 text-sm"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => handleSavePrinted(b.booklet_id)}
+                          disabled={savingId === b.booklet_id}
+                          className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                        >
+                          {savingId === b.booklet_id ? '...' : 'OK'}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleStartEdit(b)}
+                        className="text-surface-900 dark:text-surface-100 font-medium hover:text-primary-600 dark:hover:text-primary-400"
+                      >
+                        {b.printed_quantity}
+                      </button>
+                    )}
+                  </td>
+                  <td className="px-5 py-3 text-center font-medium text-surface-900 dark:text-surface-100">
+                    {b.active_orders}
+                  </td>
+                  <td className="px-5 py-3 text-center">
+                    {b.faltantes > 0 ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Faltan {b.faltantes}
+                      </span>
+                    ) : (
+                      <span className="text-green-600 dark:text-green-400 font-medium">Completo</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filteredSummary.length === 0 && (
+            <div className="text-center py-8 text-surface-500 dark:text-surface-400">
+              No hay cuadernillos
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

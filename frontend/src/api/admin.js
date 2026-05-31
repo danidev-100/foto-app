@@ -35,3 +35,4 @@ export const adminSearchOrdersByBookletTitle = (title) => api.get('/admin/orders
 export const adminGetProgressSummary = (schoolId) => api.get('/admin/progress', { params: { school_id: schoolId } });
 export const adminGetBookletProgress = (bookletId) => api.get(`/admin/progress/${bookletId}`);
 export const adminUpdateProgress = (id, status) => api.patch(`/admin/progress/${id}`, { status });
+export const adminSetPrintedQuantity = (bookletId, quantity) => api.put(`/admin/progress/${bookletId}/printed-quantity`, { quantity });

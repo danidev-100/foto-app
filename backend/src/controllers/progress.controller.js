@@ -46,4 +46,20 @@ export class ProgressController {
       return errorJSON(res, 500, 'PROG_500', 'Internal server error');
     }
   }
+
+  async setPrintedQuantity(req, res) {
+    try {
+      const { bookletId } = req.params;
+      const { quantity } = req.body;
+      if (quantity === undefined || !Number.isInteger(quantity) || quantity < 0) {
+        return errorJSON(res, 400, 'PROG_004', 'quantity must be a non-negative integer');
+      }
+      const data = await progressService.setPrintedQuantity(bookletId, quantity);
+      return successJSON(res, 200, data);
+    } catch (err) {
+      if (err.code === 'PROG_001') return errorJSON(res, 404, 'PROG_001', 'booklet not found');
+      if (err.code === 'PROG_004') return errorJSON(res, 400, 'PROG_004', err.message);
+      return errorJSON(res, 500, 'PROG_500', 'Internal server error');
+    }
+  }
 }

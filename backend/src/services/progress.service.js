@@ -11,12 +11,18 @@ export class ProgressService {
 
     return Promise.all(
       booklets.map(async (booklet) => {
-        const [completed, pending] = await Promise.all([
+        const [completed, pending, activeOrders] = await Promise.all([
           prisma.studentBookletProgress.count({
             where: { bookletId: booklet.id, status: 'completed' },
           }),
           prisma.studentBookletProgress.count({
             where: { bookletId: booklet.id, status: 'pending' },
+          }),
+          prisma.orderItem.count({
+            where: {
+              bookletId: booklet.id,
+              status: { in: ['pending', 'ready'] },
+            },
           }),
         ]);
         const total = completed + pending;
@@ -29,6 +35,9 @@ export class ProgressService {
           completed,
           pending,
           percentage: total > 0 ? Math.round((completed / total) * 100) : 0,
+          printed_quantity: booklet.printedQuantity,
+          active_orders: activeOrders,
+          faltantes: Math.max(0, activeOrders - booklet.printedQuantity),
         };
       })
     );
@@ -97,5 +106,28 @@ export class ProgressService {
       booklet_id: updated.bookletId,
       status: updated.status,
     };
+  }
+
+  async setPrintedQuantity(bookletId, quantity) {
+    if (!Number.isInteger(quantity) || quantity < 0) {
+      const err = new Error('quantity must be a non-negative integer');
+      err.code = 'PROG_004';
+      err.status = 400;
+      throw err;
+    }
+
+    const booklet = await prisma.booklet.findUnique({ where: { id: bookletId } });
+    if (!booklet) {
+      const err = new Error('booklet not found');
+      err.code = 'PROG_001';
+      err.status = 404;
+      throw err;
+    }
+
+    return prisma.booklet.update({
+      where: { id: bookletId },
+      data: { printedQuantity: quantity },
+      select: { id: true, printedQuantity: true },
+    });
   }
 }
