@@ -191,6 +191,14 @@ export class OrderService {
 
     const items = await prisma.orderItem.findMany({ where: { orderId } });
 
+    // Check if all items are already delivered — nothing to cancel
+    if (items.length > 0 && items.every((i) => i.status === 'delivered')) {
+      const err = new Error('order cannot be cancelled in its current status');
+      err.code = 'ORD_002';
+      err.status = 409;
+      throw err;
+    }
+
     return prisma.$transaction(async (tx) => {
       // Re-check status under lock
       const current = await tx.order.findUnique({ where: { id: orderId }, select: { status: true } });
@@ -201,11 +209,22 @@ export class OrderService {
         throw err;
       }
 
-      // Restore stock
-      for (const item of items) {
+      // Restore stock only for non-delivered items
+      const nonDelivered = items.filter((i) => i.status !== 'delivered');
+      for (const item of nonDelivered) {
         await tx.booklet.update({
           where: { id: item.bookletId },
           data: { stock: { increment: item.quantity } },
+        });
+      }
+
+      // Only cancel non-delivered items
+      const deliveredIds = items.filter((i) => i.status === 'delivered').map((i) => i.id);
+      const cancelIds = nonDelivered.map((i) => i.id);
+      if (cancelIds.length > 0) {
+        await tx.orderItem.updateMany({
+          where: { id: { in: cancelIds } },
+          data: { status: 'cancelled' },
         });
       }
 
@@ -216,6 +235,38 @@ export class OrderService {
       });
 
       return { ...order, status: 'cancelled' };
+    });
+  }
+
+  async adminUpdateOrderItemStatus(orderId, itemId, newStatus) {
+    const VALID_TRANSITIONS = {
+      pending:    ['ready', 'cancelled'],
+      ready:      ['delivered', 'cancelled'],
+      delivered:  [],
+      cancelled:  [],
+    };
+
+    const item = await prisma.orderItem.findFirst({
+      where: { id: itemId, orderId },
+    });
+    if (!item) {
+      const err = new Error('order item not found');
+      err.code = 'INF_001';
+      err.status = 404;
+      throw err;
+    }
+
+    const allowed = VALID_TRANSITIONS[item.status];
+    if (!allowed || !allowed.includes(newStatus)) {
+      const err = new Error(`cannot transition from '${item.status}' to '${newStatus}'`);
+      err.code = 'ORD_003';
+      err.status = 409;
+      throw err;
+    }
+
+    return prisma.orderItem.update({
+      where: { id: itemId },
+      data: { status: newStatus },
     });
   }
 

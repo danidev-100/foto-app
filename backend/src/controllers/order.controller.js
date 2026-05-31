@@ -144,4 +144,18 @@ export class OrderController {
       return errorJSON(res, 500, 'INF_001', 'failed to search orders');
     }
   }
+
+  async updateOrderItemStatus(req, res) {
+    const { status } = req.body;
+    if (!status) return errorJSON(res, 400, 'AUTH_004', 'status is required');
+
+    try {
+      const data = await orderService.adminUpdateOrderItemStatus(req.params.orderId, req.params.itemId, status);
+      return successJSON(res, 200, data);
+    } catch (err) {
+      if (err.code === 'INF_001') return errorJSON(res, 404, 'INF_001', 'order item not found');
+      if (err.code === 'ORD_003') return errorJSON(res, 409, 'ORD_003', err.message);
+      return errorJSON(res, 500, 'INF_001', 'failed to update order item status');
+    }
+  }
 }
