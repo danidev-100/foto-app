@@ -398,9 +398,13 @@ export class OrderService {
       throw err;
     }
 
+    const data = { status: newStatus };
+    if (newStatus === 'delivered') {
+      data.deliveredAt = new Date();
+    }
     const result = await prisma.order.updateMany({
       where: { id: orderId },
-      data: { status: newStatus },
+      data,
     });
     if (result.count === 0) {
       const err = new Error('order not found');

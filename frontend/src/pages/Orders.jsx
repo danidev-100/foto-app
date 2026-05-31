@@ -109,6 +109,10 @@ export default function Orders() {
   const toNum = (val) => (val === null || val === undefined ? 0 : Number(val));
   const formatPrice = (cents) => `$${(toNum(cents) / 100).toLocaleString('es-AR')}`;
   const formatDate = (date) => new Date(date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
+  const formatDateTime = (date) => new Date(date).toLocaleString('es-AR', {
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
 
   if (loading && mpStatus !== 'success') {
     return (
@@ -188,7 +192,10 @@ export default function Orders() {
                 <div className="px-5 py-4 border-b border-surface-100 dark:border-surface-700 flex items-center justify-between">
                   <div>
                     <span className="text-sm font-medium text-surface-900 dark:text-surface-100">Pedido #{order.id.slice(0, 8)}</span>
-                    <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">{formatDate(order.created_at)}</p>
+                    <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">Encargado: {formatDateTime(order.created_at)}</p>
+                    {order.delivered_at && (
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">Entregado: {formatDateTime(order.delivered_at)}</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="badge bg-primary-50 text-primary-700 ring-1 ring-primary-200 text-xs">
