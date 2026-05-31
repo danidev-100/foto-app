@@ -181,8 +181,8 @@ export default function Orders() {
         <div className="space-y-4">
           {orders.map((order) => {
             const status = statusConfig[order.status] || statusConfig.pending;
-            const payment = paymentConfig[order.payment_status] || paymentConfig.pending;
-            const showPayButton = order.payment_method === 'mercadopago' && order.payment_status !== 'paid' && order.status !== 'cancelled';
+            const payment = paymentConfig[order.paymentStatus] || paymentConfig.pending;
+            const showPayButton = order.paymentMethod === 'mercadopago' && order.paymentStatus !== 'paid' && order.status !== 'cancelled';
             const showCancelButton = order.status === 'pending';
             const isLoading = actionLoading === `cancel-${order.id}` || actionLoading === `pay-${order.id}`;
 
@@ -192,14 +192,14 @@ export default function Orders() {
                 <div className="px-5 py-4 border-b border-surface-100 dark:border-surface-700 flex items-center justify-between">
                   <div>
                     <span className="text-sm font-medium text-surface-900 dark:text-surface-100">Pedido #{order.id.slice(0, 8)}</span>
-                    <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">Encargado: {formatDateTime(order.created_at)}</p>
-                    {order.delivered_at && (
-                      <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">Entregado: {formatDateTime(order.delivered_at)}</p>
+                    <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">Encargado: {formatDateTime(order.createdAt)}</p>
+                    {order.deliveredAt && (
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">Entregado: {formatDateTime(order.deliveredAt)}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="badge bg-primary-50 text-primary-700 ring-1 ring-primary-200 text-xs">
-                      {methodLabels[order.payment_method] || order.payment_method}
+                      {methodLabels[order.paymentMethod] || order.paymentMethod}
                     </span>
                     <span className={payment.className}>{payment.label}</span>
                     <span className={status.className}>{status.label}</span>
