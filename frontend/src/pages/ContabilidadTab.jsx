@@ -6,6 +6,73 @@ import {
   adminSetPrintedQuantity,
 } from '../api/admin';
 
+function ProductionCard({ booklet, editingPrinted, editValue, savingId, onStartEdit, onSavePrinted, onEditValueChange, onKeyDown }) {
+  return (
+    <div className="card p-3 space-y-2 hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h4 className="text-sm font-semibold text-surface-900 dark:text-surface-100 truncate">
+            {booklet.booklet_title}
+          </h4>
+          <p className="text-xs text-surface-500 dark:text-surface-400 truncate">
+            {booklet.course_name}
+          </p>
+          <p className="text-xs text-surface-400 dark:text-surface-500 truncate">
+            {booklet.school_name}
+          </p>
+        </div>
+        {booklet.faltantes > 0 ? (
+          <span className="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800">
+            -{booklet.faltantes}
+          </span>
+        ) : (
+          <span className="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800">
+            OK
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-1">
+          <span className="text-surface-400">Impresos:</span>
+          {editingPrinted === booklet.booklet_id ? (
+            <div className="flex items-center gap-0.5">
+              <input
+                type="number"
+                min="0"
+                value={editValue}
+                onChange={(e) => onEditValueChange(e.target.value)}
+                onKeyDown={(e) => onKeyDown(e, booklet.booklet_id)}
+                className="w-14 text-center input-field py-0.5 text-xs"
+                autoFocus
+              />
+              <button
+                onClick={() => onSavePrinted(booklet.booklet_id)}
+                disabled={savingId === booklet.booklet_id}
+                className="text-primary-600 hover:text-primary-700 font-medium px-1"
+              >
+                {savingId === booklet.booklet_id ? '...' : 'OK'}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => onStartEdit(booklet)}
+              className="font-semibold text-surface-900 dark:text-surface-100 hover:text-primary-600 dark:hover:text-primary-400"
+            >
+              {booklet.printed_quantity}
+            </button>
+          )}
+        </div>
+        <span className="text-surface-300">|</span>
+        <div className="flex items-center gap-1">
+          <span className="text-surface-400">Pedidos:</span>
+          <span className="font-semibold text-surface-900 dark:text-surface-100">{booklet.active_orders}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ContabilidadTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -347,77 +414,108 @@ export default function ContabilidadTab() {
         </div>
       )}
 
-      {/* ── Tab: Producción ── */}
+      {/* ── Tab: Producción (Kanban) ── */}
       {activeTab === 'produccion' && (
-        <div className="card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
-              <tr>
-                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Cuadernillo</th>
-                <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Curso</th>
-                <th className="text-center px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Impresos</th>
-                <th className="text-center px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Pedidos</th>
-                <th className="text-center px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Faltantes</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
-              {filteredSummary.map((b) => (
-                <tr key={b.booklet_id} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
-                  <td className="px-5 py-3 font-medium text-surface-900 dark:text-surface-100">{b.booklet_title}</td>
-                  <td className="px-5 py-3 text-surface-500 dark:text-surface-400">{b.course_name}</td>
-                  <td className="px-5 py-3 text-center">
-                    {editingPrinted === b.booklet_id ? (
-                      <div className="flex items-center justify-center gap-1">
-                        <input
-                          type="number"
-                          min="0"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, b.booklet_id)}
-                          className="w-20 text-center input-field py-1 text-sm"
-                          autoFocus
-                        />
-                        <button
-                          onClick={() => handleSavePrinted(b.booklet_id)}
-                          disabled={savingId === b.booklet_id}
-                          className="text-primary-600 hover:text-primary-700 text-sm font-medium"
-                        >
-                          {savingId === b.booklet_id ? '...' : 'OK'}
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleStartEdit(b)}
-                        className="text-surface-900 dark:text-surface-100 font-medium hover:text-primary-600 dark:hover:text-primary-400"
-                      >
-                        {b.printed_quantity}
-                      </button>
-                    )}
-                  </td>
-                  <td className="px-5 py-3 text-center font-medium text-surface-900 dark:text-surface-100">
-                    {b.active_orders}
-                  </td>
-                  <td className="px-5 py-3 text-center">
-                    {b.faltantes > 0 ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800">
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Faltan {b.faltantes}
+        <div className="space-y-6">
+          {(() => {
+            const porImprimir = filteredSummary.filter((b) => b.faltantes > 0 && b.printed_quantity === 0);
+            const enImpresion = filteredSummary.filter((b) => b.printed_quantity > 0 && b.faltantes > 0);
+            const completado = filteredSummary.filter((b) => b.faltantes === 0);
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Columna: Por imprimir */}
+                <div className="card overflow-hidden flex flex-col">
+                  <div className="px-4 py-3 border-b border-surface-200 dark:border-surface-700 bg-red-50 dark:bg-red-900/20">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-red-700 dark:text-red-400">Por imprimir</h3>
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400">
+                        {porImprimir.length}
                       </span>
-                    ) : (
-                      <span className="text-green-600 dark:text-green-400 font-medium">Completo</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 p-3 space-y-3 min-h-[200px]">
+                    {porImprimir.map((b) => (
+                      <ProductionCard
+                        key={b.booklet_id}
+                        booklet={b}
+                        editingPrinted={editingPrinted}
+                        editValue={editValue}
+                        savingId={savingId}
+                        onStartEdit={handleStartEdit}
+                        onSavePrinted={handleSavePrinted}
+                        onEditValueChange={setEditValue}
+                        onKeyDown={handleKeyDown}
+                      />
+                    ))}
+                    {porImprimir.length === 0 && (
+                      <p className="text-xs text-surface-400 text-center py-8">Sin cuadernillos</p>
                     )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {filteredSummary.length === 0 && (
-            <div className="text-center py-8 text-surface-500 dark:text-surface-400">
-              No hay cuadernillos
-            </div>
-          )}
+                  </div>
+                </div>
+
+                {/* Columna: En impresión */}
+                <div className="card overflow-hidden flex flex-col">
+                  <div className="px-4 py-3 border-b border-surface-200 dark:border-surface-700 bg-amber-50 dark:bg-amber-900/20">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-400">En impresión</h3>
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400">
+                        {enImpresion.length}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex-1 p-3 space-y-3 min-h-[200px]">
+                    {enImpresion.map((b) => (
+                      <ProductionCard
+                        key={b.booklet_id}
+                        booklet={b}
+                        editingPrinted={editingPrinted}
+                        editValue={editValue}
+                        savingId={savingId}
+                        onStartEdit={handleStartEdit}
+                        onSavePrinted={handleSavePrinted}
+                        onEditValueChange={setEditValue}
+                        onKeyDown={handleKeyDown}
+                      />
+                    ))}
+                    {enImpresion.length === 0 && (
+                      <p className="text-xs text-surface-400 text-center py-8">Sin cuadernillos</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Columna: Completado */}
+                <div className="card overflow-hidden flex flex-col">
+                  <div className="px-4 py-3 border-b border-surface-200 dark:border-surface-700 bg-green-50 dark:bg-green-900/20">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-green-700 dark:text-green-400">Completado</h3>
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400">
+                        {completado.length}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex-1 p-3 space-y-3 min-h-[200px]">
+                    {completado.map((b) => (
+                      <ProductionCard
+                        key={b.booklet_id}
+                        booklet={b}
+                        editingPrinted={editingPrinted}
+                        editValue={editValue}
+                        savingId={savingId}
+                        onStartEdit={handleStartEdit}
+                        onSavePrinted={handleSavePrinted}
+                        onEditValueChange={setEditValue}
+                        onKeyDown={handleKeyDown}
+                      />
+                    ))}
+                    {completado.length === 0 && (
+                      <p className="text-xs text-surface-400 text-center py-8">Sin cuadernillos</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>
