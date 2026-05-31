@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   adminGetCourses, adminGetDivisions, adminGetSchools,
   adminGetBooklets, adminCreateBooklet, adminUpdateBooklet, adminDeleteBooklet,
@@ -51,6 +51,7 @@ export default function Admin() {
   const [booklets, setBooklets] = useState([]);
   const [orders, setOrders] = useState([]);
   const [studentNames, setStudentNames] = useState({});
+  const pendingCount = useMemo(() => orders.filter((o) => o.order?.status === 'pending').length, [orders]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
 
@@ -630,9 +631,9 @@ export default function Admin() {
           }`}
         >
           Pedidos Pendientes
-          {orders.length > 0 && (
+          {pendingCount > 0 && (
             <span className="ml-2 px-2 py-0.5 bg-primary-600 text-white text-xs rounded-full">
-              {orders.length}
+              {pendingCount}
             </span>
           )}
         </button>
