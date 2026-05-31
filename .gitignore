@@ -33,3 +33,4 @@ tmp/
 *.log
 
 .vercel
+.env*.local
