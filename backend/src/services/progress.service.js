@@ -129,9 +129,8 @@ export class ProgressService {
 
     if (delta > 0) {
       const pendingItems = await prisma.orderItem.findMany({
-        where: { bookletId, status: 'pending' },
+        where: { bookletId, status: 'pending', order: { status: 'pending' } },
         orderBy: { createdAt: 'asc' },
-        include: { order: { select: { status: true } } },
       });
 
       let remaining = delta;
