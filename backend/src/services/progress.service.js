@@ -125,31 +125,6 @@ export class ProgressService {
       throw err;
     }
 
-    // Advance pending order items to ready as printed quantity increases
-    const pendingItems = await prisma.orderItem.findMany({
-      where: { bookletId, status: 'pending' },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    let remaining = quantity - booklet.printedQuantity;
-    if (remaining > 0) {
-      const toAdvance = [];
-      for (const item of pendingItems) {
-        if (item.quantity <= remaining) {
-          toAdvance.push(item.id);
-          remaining -= item.quantity;
-        } else {
-          break;
-        }
-      }
-      if (toAdvance.length > 0) {
-        await prisma.orderItem.updateMany({
-          where: { id: { in: toAdvance } },
-          data: { status: 'ready' },
-        });
-      }
-    }
-
     return prisma.booklet.update({
       where: { id: bookletId },
       data: { printedQuantity: quantity },
