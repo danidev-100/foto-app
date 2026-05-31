@@ -18,12 +18,13 @@ export class ProgressService {
           prisma.studentBookletProgress.count({
             where: { bookletId: booklet.id, status: 'pending' },
           }),
-          prisma.orderItem.count({
+          prisma.orderItem.aggregate({
             where: {
               bookletId: booklet.id,
               status: { in: ['pending', 'ready'] },
             },
-          }),
+            _sum: { quantity: true },
+          }).then((r) => r._sum.quantity || 0),
         ]);
         const total = completed + pending;
         return {
