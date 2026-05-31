@@ -11,7 +11,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate && prisma db push --accept-data-loss",
     "vercel-build": "prisma generate && prisma db push --accept-data-loss",
     "db:seed": "node prisma/seed.js",
     "test": "vitest run --reporter=verbose",
