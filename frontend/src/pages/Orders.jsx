@@ -34,6 +34,7 @@ export default function Orders() {
         ...d.order,
         items: d.items || []
       }));
+      console.log('[Orders] loaded orders sample:', flat.length > 0 ? { id: flat[0].id?.slice(0,8), createdAt: flat[0].createdAt, deliveredAt: flat[0].deliveredAt, keys: Object.keys(flat[0]) } : 'empty');
       setOrders(flat);
       // If polling for MP success and orders appeared, stop polling
       if (pollRef.current && flat.length > 0) {
@@ -87,7 +88,11 @@ export default function Orders() {
     try {
       await cancelOrder(id);
       const { data } = await getOrders();
-      setOrders(data.data || []);
+      const flat = (data.data || []).map(d => ({
+        ...d.order,
+        items: d.items || []
+      }));
+      setOrders(flat);
     } finally {
       setActionLoading(null);
     }
