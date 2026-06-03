@@ -34,7 +34,10 @@ export default function Orders() {
         ...d.order,
         items: d.items || []
       }));
-      console.log('[Orders] loaded orders sample:', flat.length > 0 ? { id: flat[0].id?.slice(0,8), createdAt: flat[0].createdAt, deliveredAt: flat[0].deliveredAt, keys: Object.keys(flat[0]) } : 'empty');
+      if (flat.length > 0) {
+        const raw = flat[0].createdAt;
+        console.log('[Orders] createdAt:', { type: typeof raw, constructor: raw?.constructor?.name, value: raw, isDate: raw instanceof Date, parsed: parseDate(raw) });
+      }
       setOrders(flat);
       // If polling for MP success and orders appeared, stop polling
       if (pollRef.current && flat.length > 0) {
@@ -113,11 +116,49 @@ export default function Orders() {
 
   const toNum = (val) => (val === null || val === undefined ? 0 : Number(val));
   const formatPrice = (cents) => `$${(toNum(cents) / 100).toLocaleString('es-AR')}`;
-  const formatDate = (date) => new Date(date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
-  const formatDateTime = (date) => new Date(date).toLocaleString('es-AR', {
-    day: 'numeric', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
+  const parseDate = (val) => {
+    if (!val) return null;
+    // Already a valid Date
+    if (val instanceof Date && !isNaN(val.getTime())) return val;
+    // ISO string
+    if (typeof val === 'string') {
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) return d;
+      // Try parsing as number (timestamp in ms)
+      const num = Number(val);
+      if (!isNaN(num)) {
+        const d2 = new Date(num);
+        if (!isNaN(d2.getTime())) return d2;
+      }
+    }
+    // Number (timestamp)
+    if (typeof val === 'number' && !isNaN(val)) {
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) return d;
+    }
+    // Object with value/iso/toISOString (Prisma serialization edge case)
+    if (typeof val === 'object') {
+      if (typeof val.toISOString === 'function') return val;
+      if (val.value) return parseDate(val.value);
+      if (val.iso) return parseDate(val.iso);
+    }
+    return null;
+  };
+
+  const formatDate = (date) => {
+    const d = parseDate(date);
+    if (!d) return '—';
+    return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const formatDateTime = (date) => {
+    const d = parseDate(date);
+    if (!d) return '—';
+    return d.toLocaleString('es-AR', {
+      day: 'numeric', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  };
 
   if (loading && mpStatus !== 'success') {
     return (
@@ -206,7 +247,7 @@ export default function Orders() {
                     <span className="badge bg-primary-50 text-primary-700 ring-1 ring-primary-200 text-xs">
                       {methodLabels[order.paymentMethod] || order.paymentMethod}
                     </span>
-                    <span className={payment.className}>{payment.label}</span>
+                   
                     <span className={status.className}>{status.label}</span>
                   </div>
                 </div>
