@@ -611,7 +611,7 @@ export default function Admin() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 overflow-x-auto flex-nowrap">
         <button
           onClick={() => setActiveTab('booklets')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -671,7 +671,7 @@ export default function Admin() {
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 rounded-xl px-4 py-3 shadow-lg ring-1 ${
+        <div className={`fixed top-4 right-4 left-4 sm:left-auto max-w-sm z-50 rounded-xl px-4 py-3 shadow-lg ring-1 ${
           toast.type === 'success' ? 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 ring-green-200 dark:ring-green-800' : 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300 ring-red-200 dark:ring-red-800'
         }`}>
           <span className="text-sm font-medium">{toast.message}</span>
@@ -687,7 +687,7 @@ export default function Admin() {
           </h3>
 
           {/* Structured course selector */}
-          <div className="grid gap-4 sm:grid-cols-4 mb-4 p-4 bg-surface-50 dark:bg-surface-800/50 rounded-xl">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-4 mb-4 p-4 bg-surface-50 dark:bg-surface-800/50 rounded-xl">
             <div>
               <label className="label-field">Colegio</label>
               <select
@@ -781,7 +781,7 @@ export default function Admin() {
               {errors.matchedCourse}
             </div>
           )}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               <label className="label-field">Título</label>
               <input
@@ -846,7 +846,7 @@ export default function Admin() {
           )}
         </div>
 
-        <div className="card overflow-hidden">
+        <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
               <tr>
@@ -1042,7 +1042,7 @@ export default function Admin() {
           </div>
 
           {/* Course list */}
-          <div className="card overflow-hidden">
+          <div className="card overflow-x-auto">
             <div className="px-5 py-3 border-b border-surface-200 dark:border-surface-700">
               <h3 className="font-semibold text-surface-900 dark:text-surface-100">
                 Cursos existentes
@@ -1249,7 +1249,7 @@ export default function Admin() {
 
           {/* Search Results: Order by ID */}
           {searchOrderResult && (
-            <div className="card overflow-hidden">
+            <div className="card overflow-x-auto">
               <div className="px-5 py-3 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-800 flex items-center justify-between">
                 <h4 className="font-semibold text-primary-800 dark:text-primary-300 text-sm">
                   Resultado: Pedido #{searchOrderResult.order.id.slice(0, 8)}
@@ -1317,7 +1317,7 @@ export default function Admin() {
 
           {/* Search Results: By Student Name */}
           {searchStudentResults.length > 0 && (
-            <div className="card overflow-hidden">
+            <div className="card overflow-x-auto">
               <div className="px-5 py-3 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-800 flex items-center justify-between">
                 <h4 className="font-semibold text-primary-800 dark:text-primary-300 text-sm">
                   Pedidos de "{searchStudentName}" ({searchStudentResults.length} encontrado{searchStudentResults.length !== 1 ? 's' : ''})
@@ -1380,7 +1380,7 @@ export default function Admin() {
 
           {/* Search Results: By Booklet Title */}
           {searchBookletResults.length > 0 && (
-            <div className="card overflow-hidden">
+            <div className="card overflow-x-auto">
               <div className="px-5 py-3 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-800 flex items-center justify-between">
                 <h4 className="font-semibold text-primary-800 dark:text-primary-300 text-sm">
                   Cuadernillo "{searchBookletTitle}" ({searchBookletResults.length} encontrado{searchBookletResults.length !== 1 ? 's' : ''})
@@ -1445,7 +1445,7 @@ export default function Admin() {
           )}
 
           {/* All Orders Table — grouped by school */}
-          <div className="card overflow-hidden">
+          <div className="card overflow-x-auto">
             <div className="px-5 py-3 bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
               <h4 className="font-semibold text-surface-900 dark:text-surface-100 text-sm">Todos los Pedidos</h4>
             </div>
@@ -1560,7 +1560,7 @@ export default function Admin() {
             </div>
           ) : (
             <>
-              <div className="card overflow-hidden">
+              <div className="card overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
                     <tr>

@@ -105,7 +105,7 @@ export default function Cart() {
       <div className="space-y-4">
         {cart.items.map((item) => (
           <div key={item.id} className="card p-5">
-            <div className="flex items-start gap-4">
+            <div className="flex flex-col sm:flex-row items-start gap-4">
               {/* Thumbnail */}
               <div className="w-16 h-16 bg-primary-50 dark:bg-primary-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
                 <svg className="w-8 h-8 text-primary-400 dark:text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -124,7 +124,7 @@ export default function Cart() {
                   <button
                     onClick={() => updateQty(item.bookletId, item.quantity - 1)}
                     disabled={updating === item.bookletId}
-                  className="w-8 h-8 rounded-lg bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600 flex items-center justify-center text-surface-600 dark:text-surface-300 transition-colors disabled:opacity-50"
+                  className="min-w-[44px] min-h-[44px] rounded-lg bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600 flex items-center justify-center text-surface-600 dark:text-surface-300 transition-colors disabled:opacity-50"
                 >
                   −
                 </button>
@@ -132,13 +132,13 @@ export default function Cart() {
                   <button
                     onClick={() => updateQty(item.bookletId, item.quantity + 1)}
                     disabled={updating === item.bookletId}
-                  className="w-8 h-8 rounded-lg bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600 flex items-center justify-center text-surface-600 dark:text-surface-300 transition-colors disabled:opacity-50"
+                  className="min-w-[44px] min-h-[44px] rounded-lg bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600 flex items-center justify-center text-surface-600 dark:text-surface-300 transition-colors disabled:opacity-50"
                 >
                   +
                 </button>
                 <button
                     onClick={() => remove(item.bookletId)}
-                  className="ml-2 w-8 h-8 rounded-lg text-surface-400 dark:text-surface-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center transition-colors"
+                  className="ml-2 min-w-[44px] min-h-[44px] rounded-lg text-surface-400 dark:text-surface-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

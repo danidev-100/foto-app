@@ -197,7 +197,7 @@ export default function Orders() {
                       <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">Entregado: {formatDateTime(order.deliveredAt)}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="badge bg-primary-50 text-primary-700 ring-1 ring-primary-200 text-xs">
                       {methodLabels[order.paymentMethod] || order.paymentMethod}
                     </span>
@@ -233,7 +233,7 @@ export default function Orders() {
                 <div className="px-5 py-4 bg-surface-50 dark:bg-surface-800/50 flex items-center justify-between">
                   <span className="text-lg font-bold text-surface-900 dark:text-surface-100">{formatPrice(order.total)}</span>
                   {(showPayButton || showCancelButton) && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       {showPayButton && (
                         <button
                           onClick={() => handlePay(order.id)}

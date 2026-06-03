@@ -153,7 +153,7 @@ export default function ContabilidadTab() {
   // ── Error Toast ──
   if (error) {
     return (
-      <div className="fixed top-4 right-4 z-50 rounded-xl px-4 py-3 shadow-lg ring-1 bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300 ring-red-200 dark:ring-red-800">
+      <div className="fixed top-4 right-4 left-4 sm:left-auto max-w-sm z-50 rounded-xl px-4 py-3 shadow-lg ring-1 bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300 ring-red-200 dark:ring-red-800">
         <span className="text-sm font-medium">{error}</span>
       </div>
     );
@@ -187,7 +187,7 @@ export default function ContabilidadTab() {
               </p>
             </div>
 
-            <div className="card overflow-hidden">
+            <div className="card overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
                   <tr>
@@ -249,7 +249,7 @@ export default function ContabilidadTab() {
       <h2 className="text-xl font-bold text-surface-900 dark:text-surface-100">Contabilidad</h2>
 
       {/* Sub-tabs */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto flex-nowrap">
         <button
           onClick={() => { setActiveTab('progreso'); setSelectedBooklet(null); }}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -293,7 +293,7 @@ export default function ContabilidadTab() {
 
       {/* ── Tab: Progreso ── */}
       {activeTab === 'progreso' && (
-        <div className="card overflow-hidden">
+        <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
               <tr>
@@ -349,7 +349,7 @@ export default function ContabilidadTab() {
 
       {/* ── Tab: Producción ── */}
       {activeTab === 'produccion' && (
-        <div className="card overflow-hidden">
+        <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
               <tr>

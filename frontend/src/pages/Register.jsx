@@ -49,7 +49,7 @@ export default function Register() {
       </div>
 
       {/* Right panel - form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12 relative">
+      <div className="flex-1 flex items-center justify-center px-6 sm:px-8 py-12 relative">
         {/* Theme toggle */}
         <button
           onClick={toggle}
