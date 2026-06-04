@@ -3,18 +3,32 @@ import { prisma } from '../lib/prisma.js';
 
 /**
  * Normalize Prisma 6 model object for safe JSON serialization.
- * Prisma 6 proxies can cause Date fields to serialize as empty objects {}.
- * This converts Date fields to ISO strings.
+ * Prisma 6 proxies can cause Date fields to serialize as empty objects {},
+ * and Decimal fields need explicit Number() conversion.
  */
 function toJSONSafe(obj) {
   if (!obj || typeof obj !== 'object') return obj;
+
+  // Prisma Decimal — convert to plain number
+  if (obj.constructor?.name === 'Decimal' || typeof obj.toNumber === 'function') {
+    return Number(obj);
+  }
+
+  if (Array.isArray(obj)) return obj.map(toJSONSafe);
+
   const out = {};
   for (const key of Object.keys(obj)) {
     const val = obj[key];
     if (val instanceof Date) {
       out[key] = val.toISOString();
-    } else if (val && typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length > 0) {
-      out[key] = toJSONSafe(val);
+    } else if (val && typeof val === 'object' && !Array.isArray(val)) {
+      if (val.constructor?.name === 'Decimal' || typeof val.toNumber === 'function') {
+        out[key] = Number(val);
+      } else if (Object.keys(val).length > 0) {
+        out[key] = toJSONSafe(val);
+      } else {
+        out[key] = val;
+      }
     } else {
       out[key] = val;
     }
