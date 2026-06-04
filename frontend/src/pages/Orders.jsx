@@ -238,21 +238,9 @@ export default function Orders() {
                 <div className="px-5 py-4 border-b border-surface-100 dark:border-surface-700 flex items-center justify-between">
                   <div>
                     <span className="text-sm font-medium text-surface-900 dark:text-surface-100">Pedido #{order.id.slice(0, 8)}</span>
-                    <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
-                      Encargado: {formatDateTime(order.createdAt)}
-                      {' '}
-                      <span className="text-surface-300 dark:text-surface-600" style={{fontSize:'10px'}}>
-                        [raw: {JSON.stringify(order.createdAt)}]
-                      </span>
-                    </p>
+                    <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">Encargado: {formatDateTime(order.createdAt)}</p>
                     {order.deliveredAt && (
-                      <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">
-                        Entregado: {formatDateTime(order.deliveredAt)}
-                        {' '}
-                        <span className="text-surface-300 dark:text-surface-600" style={{fontSize:'10px'}}>
-                          [raw: {JSON.stringify(order.deliveredAt)}]
-                        </span>
-                      </p>
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">Entregado: {formatDateTime(order.deliveredAt)}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">

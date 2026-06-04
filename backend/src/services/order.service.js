@@ -1,6 +1,27 @@
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../lib/prisma.js';
 
+/**
+ * Normalize Prisma 6 model object for safe JSON serialization.
+ * Prisma 6 proxies can cause Date fields to serialize as empty objects {}.
+ * This converts Date fields to ISO strings.
+ */
+function toJSONSafe(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  const out = {};
+  for (const key of Object.keys(obj)) {
+    const val = obj[key];
+    if (val instanceof Date) {
+      out[key] = val.toISOString();
+    } else if (val && typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length > 0) {
+      out[key] = toJSONSafe(val);
+    } else {
+      out[key] = val;
+    }
+  }
+  return out;
+}
+
 export class OrderService {
   async placeOrder(studentId, { paymentMethod }) {
     if (paymentMethod !== 'mercadopago' && paymentMethod !== 'cash') {
@@ -116,7 +137,7 @@ export class OrderService {
       // 7. Clear cart items
       await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
 
-      return order;
+      return toJSONSafe(order);
     });
   }
 
@@ -150,8 +171,8 @@ export class OrderService {
     }
 
     const result = orders.map((o) => ({
-      order: o,
-      items: itemsMap[o.id] || [],
+      order: toJSONSafe(o),
+      items: itemsMap[o.id] ? itemsMap[o.id].map(toJSONSafe) : [],
     }));
 
     return { orders: result, total, page, limit };
@@ -171,7 +192,7 @@ export class OrderService {
       orderBy: { createdAt: 'asc' },
     });
 
-    return { order, items };
+    return { order: toJSONSafe(order), items: items.map(toJSONSafe) };
   }
 
   async cancelOrder(studentId, orderId) {
@@ -234,7 +255,7 @@ export class OrderService {
         data: { status: 'cancelled' },
       });
 
-      return { ...order, status: 'cancelled' };
+      return toJSONSafe({ ...order, status: 'cancelled' });
     });
   }
 
@@ -264,10 +285,11 @@ export class OrderService {
       throw err;
     }
 
-    return prisma.orderItem.update({
+    const result = await prisma.orderItem.update({
       where: { id: itemId },
       data: { status: newStatus },
     });
+    return toJSONSafe(result);
   }
 
   // Admin
@@ -287,7 +309,7 @@ export class OrderService {
       prisma.order.count({ where }),
     ]);
 
-    return { orders, total, page, limit };
+    return { orders: orders.map(toJSONSafe), total, page, limit };
   }
 
   async adminListOrdersWithDetails(status, page = 1, limit = 10) {
@@ -348,8 +370,8 @@ export class OrderService {
       const schoolFromItems = orderItems.find(i => i.booklet?.school)?.booklet?.school || null;
 
       return {
-        order: o,
-        items: orderItems,
+        order: toJSONSafe(o),
+        items: orderItems.map(toJSONSafe),
         school: schoolFromStudent || schoolFromItems,
       };
     });
@@ -371,7 +393,7 @@ export class OrderService {
       orderBy: { createdAt: 'asc' },
     });
 
-    return { order, items };
+    return { order: toJSONSafe(order), items: items.map(toJSONSafe) };
   }
 
   async adminUpdateOrderStatus(orderId, newStatus) {
@@ -438,8 +460,8 @@ export class OrderService {
     });
 
     return {
-      order,
-      items,
+      order: toJSONSafe(order),
+      items: items.map(toJSONSafe),
       studentName: order.student.name,
     };
   }
@@ -477,7 +499,7 @@ export class OrderService {
     const studentNames = {};
     const result = orders.map((o) => {
       studentNames[o.student.id] = o.student.name;
-      return { order: o, items: itemsMap[o.id] || [] };
+      return { order: toJSONSafe(o), items: (itemsMap[o.id] || []).map(toJSONSafe) };
     });
 
     return { orders: result, studentNames, itemsMap };
