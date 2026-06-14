@@ -1,5 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../lib/prisma.js';
+import { EmailService } from './email.service.js';
+import { adminLogService } from './admin-log.service.js';
+
+const emailService = new EmailService();
 
 /**
  * Normalize Prisma 6 model object for safe JSON serialization.
@@ -38,8 +42,8 @@ function toJSONSafe(obj) {
 
 export class OrderService {
   async placeOrder(studentId, { paymentMethod }) {
-    if (paymentMethod !== 'mercadopago' && paymentMethod !== 'cash') {
-      const err = new Error("invalid payment method, must be 'mercadopago' or 'cash'");
+    if (paymentMethod !== 'mercadopago' && paymentMethod !== 'cash' && paymentMethod !== 'transfer') {
+      const err = new Error("invalid payment method, must be 'mercadopago', 'cash', or 'transfer'");
       err.code = 'PAY_002';
       err.status = 400;
       throw err;
@@ -150,6 +154,28 @@ export class OrderService {
 
       // 7. Clear cart items
       await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+
+      // 8. Send email confirmation for offline payments only (cash/transfer)
+      //    MercadoPago handles its own confirmation flow.
+      if (paymentMethod === 'cash' || paymentMethod === 'transfer') {
+        prisma.student.findUnique({
+          where: { id: studentId },
+          select: { email: true, name: true },
+        }).then((studentForEmail) => {
+          if (!studentForEmail?.email) return;
+          emailService.sendOrderConfirmation(studentForEmail.email, {
+            orderId: order.id,
+            total,
+            studentName: studentForEmail.name,
+            paymentMethod,
+            items: cartItems.map((i) => ({
+              title: i.title,
+              quantity: i.quantity,
+              unitPrice: Number(i.unitPrice),
+            })),
+          }).catch((e) => console.error('[Email] order confirmation failed:', e.message));
+        }).catch((e) => console.error('[Email] fetch student failed:', e.message));
+      }
 
       return toJSONSafe(order);
     });
@@ -410,7 +436,7 @@ export class OrderService {
     return { order: toJSONSafe(order), items: items.map(toJSONSafe) };
   }
 
-  async adminUpdateOrderStatus(orderId, newStatus) {
+  async adminUpdateOrderStatus(orderId, newStatus, adminId = null) {
     const VALID_TRANSITIONS = {
       pending:    ['ready', 'cancelled'],
       ready:      ['delivered', 'cancelled'],
@@ -418,7 +444,7 @@ export class OrderService {
       cancelled:  [],
     };
 
-    const order = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } });
+    const order = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true, id: true } });
     if (!order) {
       const err = new Error('order not found');
       err.code = 'INF_001';
@@ -426,9 +452,11 @@ export class OrderService {
       throw err;
     }
 
-    const allowed = VALID_TRANSITIONS[order.status];
+    const oldStatus = order.status;
+
+    const allowed = VALID_TRANSITIONS[oldStatus];
     if (!allowed || !allowed.includes(newStatus)) {
-      const err = new Error(`cannot transition from '${order.status}' to '${newStatus}'`);
+      const err = new Error(`cannot transition from '${oldStatus}' to '${newStatus}'`);
       err.code = 'ORD_003';
       err.status = 409;
       throw err;
@@ -447,6 +475,30 @@ export class OrderService {
       err.code = 'INF_001';
       err.status = 404;
       throw err;
+    }
+
+    if (adminId) {
+      adminLogService.log(adminId, 'update', 'order', orderId, { from: oldStatus, to: newStatus }).catch(
+        (e) => console.error('[Audit] order status log failed:', e.message)
+      );
+    }
+
+    // Fire-and-forget email notification on status transitions
+    if (newStatus === 'ready' || newStatus === 'delivered' || newStatus === 'cancelled') {
+      prisma.order.findUnique({
+        where: { id: orderId },
+        include: { student: { select: { email: true, name: true } } },
+      }).then((fullOrder) => {
+        if (!fullOrder?.student?.email) return;
+        const { email, name } = fullOrder.student;
+        if (newStatus === 'ready') {
+          emailService.sendOrderReady(email, { orderId, studentName: name })
+            .catch((e) => console.error('[Email] order ready failed:', e.message));
+        } else if (newStatus === 'delivered') {
+          emailService.sendOrderDelivered(email, { orderId, studentName: name })
+            .catch((e) => console.error('[Email] order delivered failed:', e.message));
+        }
+      }).catch((e) => console.error('[Email] fetch order for notification failed:', e.message));
     }
   }
 

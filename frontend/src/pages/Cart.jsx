@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { getCart, updateCartItem, removeFromCart, clearCart } from '../api/cart';
 import { placeOrder, initMPCheckout } from '../api/orders';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../components/ToastProvider';
+import EmptyState from '../components/EmptyState';
+import Loading from '../components/Loading';
 
 export default function Cart() {
   const [cart, setCart] = useState(null);
@@ -9,6 +12,7 @@ export default function Cart() {
   const [updating, setUpdating] = useState(null);
   const [processing, setProcessing] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     getCart().then(({ data }) => setCart(data.data)).finally(() => setLoading(false));
@@ -49,13 +53,18 @@ export default function Cart() {
         return;
       }
 
-      // Cash: create order first (unchanged — admin confirms payment manually)
-      await placeOrder({ payment_method: method });
-      navigate('/orders');
+      // Cash / Transfer: create order first (admin confirms payment manually)
+      const res = await placeOrder({ payment_method: method });
+      if (method === 'transfer') {
+        const orderId = res.data?.data?.id || '';
+        navigate(`/orders?transfer_success=true&order_id=${orderId}`);
+      } else {
+        navigate('/orders');
+      }
     } catch (error) {
       console.error('Checkout failed:', error);
       const msg = error?.response?.data?.error?.message || error.message || 'Error al procesar el pago';
-      alert(msg);
+      toast.error(msg);
       setProcessing(false);
     }
   };
@@ -64,26 +73,17 @@ export default function Cart() {
   const formatPrice = (cents) => `$${(toNum(cents) / 100).toLocaleString('es-AR')}`;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-      </div>
-    );
+    return <Loading variant="spinner" className="py-20" />;
   }
 
   if (!cart?.items?.length) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <div className="w-20 h-20 bg-surface-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-          <svg className="w-10 h-10 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
-          </svg>
-        </div>
-        <h3 className="text-lg font-semibold text-surface-900">Tu carrito está vacío</h3>
-        <p className="mt-1 text-surface-500">Explorá los cuadernillos disponibles y agregá los que necesités.</p>
-        <button onClick={() => navigate('/')} className="btn-primary mt-6">
-          Ver cuadernillos
-        </button>
+      <div className="max-w-2xl mx-auto px-4 py-20">
+        <EmptyState
+          message="Tu carrito está vacío"
+          description="Explorá los cuadernillos disponibles y agregá los que necesités."
+          action={{ label: 'Ver cuadernillos', onClick: () => navigate('/') }}
+        />
       </div>
     );
   }
@@ -187,6 +187,18 @@ export default function Cart() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             Pagar en efectivo
+          </button>
+
+          {/* Transfer Button */}
+          <button
+            onClick={() => handleCheckout('transfer')}
+            disabled={processing}
+            className="w-full flex items-center justify-center gap-3 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-semibold py-3 px-6 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed ring-1 ring-indigo-200 dark:ring-indigo-800"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            Pagar por transferencia
           </button>
         </div>
 

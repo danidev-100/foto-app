@@ -1,8 +1,14 @@
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
+import ToastProvider from './components/ToastProvider';
+import Badge from './components/Badge';
+import ConfirmDialog from './components/ConfirmDialog';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Catalog from './pages/Catalog';
 import Cart from './pages/Cart';
 import Orders from './pages/Orders';
@@ -105,6 +111,7 @@ function ThemeToggle() {
 
 function Layout({ children }) {
   const { user, logout } = useAuth();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   return (
     <div className="min-h-screen bg-surface-50 dark:bg-surface-900">
@@ -141,15 +148,11 @@ function Layout({ children }) {
                 </div>
                 <span className="text-sm text-surface-600">{user?.name}</span>
                 {user?.isAdmin && (
-                  <span className="badge bg-primary-100 text-primary-700 text-xs">Admin</span>
+                  <Badge variant="info" size="sm">Admin</Badge>
                 )}
               </div>
               <button
-                onClick={() => {
-                  if (window.confirm('¿Estás seguro de que querés salir?')) {
-                    logout();
-                  }
-                }}
+                onClick={() => setShowLogoutConfirm(true)}
                 className="text-sm text-surface-400 hover:text-red-600 transition-colors"
                 title="Cerrar sesión"
               >
@@ -164,6 +167,17 @@ function Layout({ children }) {
 
       {/* Main content */}
       <main>{children}</main>
+
+      <ConfirmDialog
+        isOpen={showLogoutConfirm}
+        onConfirm={() => { logout(); setShowLogoutConfirm(false); }}
+        onCancel={() => setShowLogoutConfirm(false)}
+        title="Cerrar sesión"
+        message="¿Estás seguro de que querés salir?"
+        confirmLabel="Salir"
+        cancelLabel="Cancelar"
+        variant="danger"
+      />
     </div>
   );
 }
@@ -171,10 +185,13 @@ function Layout({ children }) {
 export default function App() {
   return (
     <AuthProvider>
+      <ToastProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route
             path="/courses"
             element={
@@ -218,6 +235,7 @@ export default function App() {
           />
         </Routes>
       </BrowserRouter>
+      </ToastProvider>
     </AuthProvider>
   );
 }

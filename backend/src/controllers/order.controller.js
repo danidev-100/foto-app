@@ -1,4 +1,5 @@
 import { OrderService } from '../services/order.service.js';
+import { prisma } from '../lib/prisma.js';
 import { successJSON, errorJSON, paginatedJSON } from '../lib/response.js';
 
 const orderService = new OrderService();
@@ -95,7 +96,7 @@ export class OrderController {
     if (!status) return errorJSON(res, 400, 'AUTH_004', 'status is required');
 
     try {
-      await orderService.adminUpdateOrderStatus(req.params.id, status);
+      await orderService.adminUpdateOrderStatus(req.params.id, status, req.studentId);
       return successJSON(res, 200, { message: 'order status updated' });
     } catch (err) {
       if (err.code === 'INF_001') return errorJSON(res, 404, 'INF_001', 'order not found');

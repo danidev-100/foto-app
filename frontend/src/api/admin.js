@@ -36,3 +36,14 @@ export const adminGetProgressSummary = (schoolId) => api.get('/admin/progress', 
 export const adminGetBookletProgress = (bookletId) => api.get(`/admin/progress/${bookletId}`);
 export const adminUpdateProgress = (id, status) => api.patch(`/admin/progress/${id}`, { status });
 export const adminSetPrintedQuantity = (bookletId, quantity) => api.put(`/admin/progress/${bookletId}/printed-quantity`, { quantity });
+
+// Export
+export const adminExportProgress = () => api.get('/admin/export/progress', { responseType: 'blob' });
+export const adminExportOrders = () => api.get('/admin/export/orders', { responseType: 'blob' });
+
+// Transfer
+export const adminConfirmTransfer = (id) => api.post(`/admin/orders/${id}/confirm-transfer`);
+
+// Audit Logs
+export const adminGetAuditLogs = (params) => api.get('/admin/audit-logs', { params });
+export const adminGetAuditLogStats = () => api.get('/admin/audit-logs/stats');

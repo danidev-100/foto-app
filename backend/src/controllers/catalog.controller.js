@@ -1,4 +1,5 @@
 import { CatalogService } from '../services/catalog.service.js';
+import { prisma } from '../lib/prisma.js';
 import { successJSON, errorJSON, paginatedJSON } from '../lib/response.js';
 
 const catalogService = new CatalogService();
@@ -81,7 +82,7 @@ export class CatalogController {
     if (!name) return errorJSON(res, 400, 'AUTH_004', 'name is required');
     if (!schoolId) return errorJSON(res, 400, 'AUTH_004', 'school_id is required');
     try {
-      const course = await catalogService.createCourse({ name, description, schoolId, divisions });
+      const course = await catalogService.createCourse({ name, description, schoolId, divisions }, req.studentId);
       return successJSON(res, 201, course);
     } catch (err) {
       if (err.code === 'AUTH_004') return errorJSON(res, 400, 'AUTH_004', err.message);
@@ -113,7 +114,7 @@ export class CatalogController {
 
   async deleteCourse(req, res) {
     try {
-      await catalogService.deleteCourse(req.params.id);
+      await catalogService.deleteCourse(req.params.id, req.studentId);
       return successJSON(res, 200, { message: 'course deleted' });
     } catch (err) {
       if (err.code === 'CAT_001') return errorJSON(res, 404, 'CAT_001', 'course not found');
@@ -190,7 +191,7 @@ export class CatalogController {
     try {
       const booklet = await catalogService.createBooklet({
         schoolId, courseId, divisionId, title, description, currentPrice, stock, imageUrl, isActive,
-      });
+      }, req.studentId);
       return successJSON(res, 201, booklet);
     } catch (err) {
       if (err.code === 'CAT_005') return errorJSON(res, 400, 'CAT_005', 'price must be non-negative');
@@ -205,7 +206,7 @@ export class CatalogController {
     try {
       const booklet = await catalogService.updateBooklet(req.params.id, {
         courseId, divisionId, title, description, currentPrice, stock, imageUrl, isActive,
-      });
+      }, req.studentId);
       return successJSON(res, 200, booklet);
     } catch (err) {
       if (err.code === 'CAT_003') return errorJSON(res, 404, 'CAT_003', 'booklet not found');
@@ -217,7 +218,7 @@ export class CatalogController {
 
   async deleteBooklet(req, res) {
     try {
-      await catalogService.deleteBooklet(req.params.id);
+      await catalogService.deleteBooklet(req.params.id, req.studentId);
       return successJSON(res, 200, { message: 'booklet deleted' });
     } catch (err) {
       if (err.code === 'CAT_003') return errorJSON(res, 404, 'CAT_003', 'booklet not found');

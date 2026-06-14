@@ -1,5 +1,8 @@
 import { prisma } from '../lib/prisma.js';
+import { AuditService } from '../services/audit.service.js';
 import { successJSON, errorJSON, paginatedJSON } from '../lib/response.js';
+
+const auditService = new AuditService();
 
 export class UserController {
   async listStudents(req, res) {
@@ -50,6 +53,7 @@ export class UserController {
         },
       });
 
+      auditService.log(req.studentId, 'update', 'student', req.params.id, updateData);
       return successJSON(res, 200, updated);
     } catch (err) {
       console.error('UpdateStudent error:', err);

@@ -104,9 +104,11 @@ model Student {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  course        Course?   @relation(fields: [courseId], references: [id])
+  course        Course?        @relation(fields: [courseId], references: [id])
   cart          Cart?
   orders        Order[]
+  resetTokens   ResetToken[]
+  refreshTokens RefreshToken[]
   progress      StudentBookletProgress[]
 
   @@map("students")
@@ -255,6 +257,34 @@ model PendingCheckout {
   @@map("pending_checkouts")
 }
 
+model ResetToken {
+  id        String    @id @default(uuid())
+  studentId String    @map("student_id")
+  token     String    @unique @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@map("reset_tokens")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  studentId String    @map("student_id")
+  tokenHash String    @unique @map("token_hash") @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@map("refresh_tokens")
+}
+
 model PaymentEvent {
   id          String    @id @default(uuid())
   orderId     String?   @map("order_id")
@@ -271,4 +301,21 @@ model PaymentEvent {
 
   @@index([mpPaymentId])
   @@map("payment_events")
+}
+
+model AdminLog {
+  id        String   @id @default(uuid())
+  adminId   String   @map("admin_id")
+  action    String   @db.VarChar(50)
+  entity    String   @db.VarChar(50)
+  entityId  String   @map("entity_id") @db.VarChar(255)
+  details   Json?    @map("details")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([adminId])
+  @@index([action])
+  @@index([entity])
+  @@index([entityId])
+  @@index([createdAt])
+  @@map("admin_logs")
 }

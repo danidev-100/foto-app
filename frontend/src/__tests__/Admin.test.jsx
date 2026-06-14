@@ -14,6 +14,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthProvider';
+import ToastProvider from '../components/ToastProvider';
 import Admin from '../pages/Admin';
 
 // Create mock functions via hoisted block (runs before any import, including vi.mock factories)
@@ -65,9 +66,11 @@ const mockUser = {
 function renderAdmin() {
   return render(
     <AuthProvider initialUser={mockUser}>
+      <ToastProvider>
       <BrowserRouter>
         <Admin />
       </BrowserRouter>
+      </ToastProvider>
     </AuthProvider>
   );
 }

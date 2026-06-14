@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { getOrders, cancelOrder, initiatePayment } from '../api/orders';
+import api from '../api/client';
+import Badge from '../components/Badge';
+import EmptyState from '../components/EmptyState';
+import Loading from '../components/Loading';
+import Modal from '../components/Modal';
+import { useToast } from '../components/ToastProvider';
 
 const statusConfig = {
   pending: { label: 'Pendiente', className: 'badge bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 ring-1 ring-amber-400 dark:ring-amber-700' },
@@ -8,15 +14,10 @@ const statusConfig = {
   cancelled: { label: 'Cancelado', className: 'badge bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800' },
 };
 
-const paymentConfig = {
-  pending: { label: 'Pendiente', className: 'badge bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400' },
-  approved: { label: 'Pagado', className: 'badge bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800' },
-  rejected: { label: 'Rechazado', className: 'badge bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800' },
-};
-
 const methodLabels = {
   mercadopago: 'Mercado Pago',
   cash: 'Efectivo',
+  transfer: 'Transferencia',
 };
 
 export default function Orders() {
@@ -24,7 +25,11 @@ export default function Orders() {
   const [loading, setLoading] = useState(true);
   const [mpStatus, setMpStatus] = useState(null); // 'success' | 'failure' | 'pending'
   const [actionLoading, setActionLoading] = useState(null);
+  const [transferSuccess, setTransferSuccess] = useState(null); // { orderId }
+  const [bankDetails, setBankDetails] = useState(null);
+  const [bankModalOpen, setBankModalOpen] = useState(false);
   const pollRef = useRef(null);
+  const { toast } = useToast();
 
   const loadOrders = async (quiet) => {
     if (!quiet) setLoading(true);
@@ -52,8 +57,26 @@ export default function Orders() {
   };
 
   useEffect(() => {
-    // Check MP redirect param
+    // Check URL params
     const params = new URLSearchParams(window.location.search);
+    const transferSuccessVal = params.get('transfer_success');
+    const orderId = params.get('order_id');
+
+    if (transferSuccessVal === 'true' && orderId) {
+      setTransferSuccess({ orderId });
+      window.history.replaceState({}, '', '/orders');
+      // Fetch bank details
+      api.get('/config/bank-details').then(({ data }) => {
+        setBankDetails(data.data || data);
+        setBankModalOpen(true);
+      }).catch(() => {
+        toast.error('Error al cargar datos bancarios');
+      });
+      loadOrders();
+      return;
+    }
+
+    // Check MP redirect param
     const redirect = params.get('mp_redirect');
 
     if (redirect === 'success') {
@@ -161,11 +184,7 @@ export default function Orders() {
   };
 
   if (loading && mpStatus !== 'success') {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-      </div>
-    );
+    return <Loading variant="spinner" className="py-20" />;
   }
 
   return (
@@ -177,13 +196,8 @@ export default function Orders() {
 
       {mpStatus === 'success' && orders.length === 0 && (
         <div className="card p-6 mb-6 text-center">
-          <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-100">Procesando tu pago...</h3>
+          <Loading variant="spinner" />
+          <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-100 mt-4">Procesando tu pago...</h3>
           <p className="mt-1 text-surface-500 dark:text-surface-400">
             El pago se realizó con éxito. Estamos verificando la transacción, en unos segundos aparecerá tu pedido.
           </p>
@@ -211,23 +225,15 @@ export default function Orders() {
       )}
 
       {orders.length === 0 && !mpStatus ? (
-        <div className="text-center py-16">
-          <div className="w-20 h-20 bg-surface-100 dark:bg-surface-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-surface-400 dark:text-surface-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-100">No tenés pedidos aún</h3>
-          <p className="mt-1 text-surface-500 dark:text-surface-400">Encargá tus cuadernillos desde el catálogo.</p>
-          <button onClick={() => window.location.href = '/'} className="btn-primary mt-6">
-            Ver cuadernillos
-          </button>
-        </div>
+        <EmptyState
+          message="No tenés pedidos aún"
+          description="Encargá tus cuadernillos desde el catálogo."
+          action={{ label: 'Ver cuadernillos', onClick: () => window.location.href = '/' }}
+        />
       ) : (
         <div className="space-y-4">
           {orders.map((order) => {
             const status = statusConfig[order.status] || statusConfig.pending;
-            const payment = paymentConfig[order.paymentStatus] || paymentConfig.pending;
             const showPayButton = order.paymentMethod === 'mercadopago' && order.paymentStatus !== 'paid' && order.status !== 'cancelled';
             const showCancelButton = order.status === 'pending';
             const isLoading = actionLoading === `cancel-${order.id}` || actionLoading === `pay-${order.id}`;
@@ -244,11 +250,9 @@ export default function Orders() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="badge bg-primary-50 text-primary-700 ring-1 ring-primary-200 text-xs">
-                      {methodLabels[order.paymentMethod] || order.paymentMethod}
-                    </span>
+                    <Badge variant="info" size="sm">{methodLabels[order.paymentMethod] || order.paymentMethod}</Badge>
                    
-                    <span className={status.className}>{status.label}</span>
+                    <Badge variant={order.status === 'pending' ? 'warning' : order.status === 'ready' ? 'info' : order.status === 'delivered' ? 'success' : 'error'}>{status.label}</Badge>
                   </div>
                 </div>
 
@@ -265,7 +269,7 @@ export default function Orders() {
                             </div>
                             <div className="flex flex-col">
                               <span className="text-sm text-surface-700 dark:text-surface-300">{item.title}</span>
-                              <span className={`mt-0.5 text-xs ${itemStatus.className}`}>{itemStatus.label}</span>
+                              <span className="mt-0.5"><Badge variant={item.status === 'pending' ? 'warning' : item.status === 'ready' ? 'info' : item.status === 'delivered' ? 'success' : 'error'} size="sm">{itemStatus.label}</Badge></span>
                             </div>
                           </div>
                           <span className="text-sm font-medium text-surface-900 dark:text-surface-100">{formatPrice(item.unitPrice * item.quantity)}</span>
@@ -311,6 +315,72 @@ export default function Orders() {
           })}
         </div>
       )}
+
+      {/* ── Bank Details Modal ── */}
+      <Modal
+        isOpen={bankModalOpen}
+        onClose={() => setBankModalOpen(false)}
+        title="Datos para la transferencia"
+        size="md"
+        footer={
+          <button
+            onClick={() => setBankModalOpen(false)}
+            className="btn-primary"
+          >
+            Entendido
+          </button>
+        }
+      >
+        {bankDetails ? (
+          <div className="space-y-4">
+            <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
+              <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                Transferí el importe exacto del pedido a la siguiente cuenta y el administrador lo confirmará manualmente.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <CopyField label="Banco" value={bankDetails.bankName} />
+              <CopyField label="CBU" value={bankDetails.cbu} />
+              <CopyField label="Alias" value={bankDetails.alias} />
+              <CopyField label="Titular" value={bankDetails.holder} />
+              <CopyField label="CUIT" value={bankDetails.cuit} />
+            </div>
+            <p className="text-xs text-surface-400 dark:text-surface-500 text-center pt-2">
+              Pedido #{transferSuccess?.orderId?.slice(0, 8) || ''}
+            </p>
+          </div>
+        ) : (
+          <Loading variant="spinner" className="py-8" />
+        )}
+      </Modal>
+    </div>
+  );
+}
+
+function CopyField({ label, value }) {
+  const { toast } = useToast();
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(value || '');
+      toast.success(`${label} copiado`);
+    } catch {
+      toast.error('Error al copiar');
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-surface-50 dark:bg-surface-800/50">
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">{label}</p>
+        <p className="text-sm font-medium text-surface-900 dark:text-surface-100 truncate mt-0.5">{value || '—'}</p>
+      </div>
+      <button
+        onClick={handleCopy}
+        className="ml-3 px-3 py-1.5 text-xs font-medium rounded-lg text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors shrink-0 min-h-[44px] inline-flex items-center ring-1 ring-primary-200 dark:ring-primary-800"
+      >
+        Copiar
+      </button>
     </div>
   );
 }

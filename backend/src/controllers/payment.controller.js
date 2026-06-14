@@ -7,6 +7,16 @@ export function initPaymentService(gateway) {
   paymentService = new PaymentService(gateway);
 }
 
+let _defaultService;
+
+function getPaymentService() {
+  if (paymentService) return paymentService;
+  if (!_defaultService) {
+    _defaultService = new PaymentService(null);
+  }
+  return _defaultService;
+}
+
 export class PaymentController {
   async initiatePayment(req, res) {
     const { method } = req.body;
@@ -40,11 +50,23 @@ export class PaymentController {
 
   async confirmCashPayment(req, res) {
     try {
-      await paymentService.confirmCashPayment(req.params.id);
+      await getPaymentService().confirmCashPayment(req.params.id, req.studentId);
       return successJSON(res, 200, { message: 'cash payment confirmed' });
     } catch (err) {
       if (err.code === 'INF_001') return errorJSON(res, 404, 'INF_001', 'order or payment not found');
       if (err.code === 'PAY_006') return errorJSON(res, 400, 'PAY_006', 'payment method is not cash');
+      if (err.code === 'PAY_003') return errorJSON(res, 400, 'PAY_003', 'payment already processed');
+      return errorJSON(res, 500, 'INF_001', 'internal server error');
+    }
+  }
+
+  async confirmTransfer(req, res) {
+    try {
+      await getPaymentService().confirmTransferPayment(req.params.id, req.studentId);
+      return successJSON(res, 200, { message: 'transfer payment confirmed' });
+    } catch (err) {
+      if (err.code === 'INF_001') return errorJSON(res, 404, 'INF_001', 'order or payment not found');
+      if (err.code === 'PAY_006') return errorJSON(res, 400, 'PAY_006', 'payment method is not transfer');
       if (err.code === 'PAY_003') return errorJSON(res, 400, 'PAY_003', 'payment already processed');
       return errorJSON(res, 500, 'INF_001', 'internal server error');
     }

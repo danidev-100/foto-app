@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../lib/prisma.js';
+import { adminLogService } from './admin-log.service.js';
 
 export class CatalogService {
   // Student-facing
@@ -74,7 +75,7 @@ export class CatalogService {
   }
 
   // Admin — Courses
-  async createCourse({ name, description, schoolId, divisions }) {
+  async createCourse({ name, description, schoolId, divisions }, adminId = null) {
     if (!schoolId) {
       const err = new Error('school_id is required');
       err.code = 'AUTH_004';
@@ -89,7 +90,7 @@ export class CatalogService {
       err.status = 400;
       throw err;
     }
-    return prisma.course.create({
+    const course = await prisma.course.create({
       data: {
         name, description, isActive: true, schoolId,
         ...(divisions?.length > 0 && {
@@ -100,6 +101,14 @@ export class CatalogService {
       },
       include: { school: true, divisions: true },
     });
+
+    if (adminId) {
+      adminLogService.log(adminId, 'create', 'course', course.id, { name }).catch(
+        (e) => console.error('[Audit] create course log failed:', e.message)
+      );
+    }
+
+    return course;
   }
 
   async updateCourse(id, { name, description, isActive }) {
@@ -136,7 +145,14 @@ export class CatalogService {
     return { bookletCount, studentCount, divisionCount };
   }
 
-  async deleteCourse(id) {
+  async deleteCourse(id, adminId = null) {
+    // Fetch name for audit before deleting
+    let courseName = null;
+    if (adminId) {
+      const course = await prisma.course.findUnique({ where: { id }, select: { name: true } });
+      courseName = course?.name || null;
+    }
+
     // Check usage before deleting
     const usage = await this.getCourseUsage(id);
     if (usage.bookletCount > 0 || usage.studentCount > 0) {
@@ -154,6 +170,12 @@ export class CatalogService {
       err.code = 'CAT_001';
       err.status = 404;
       throw err;
+    }
+
+    if (adminId) {
+      adminLogService.log(adminId, 'delete', 'course', id, { name: courseName }).catch(
+        (e) => console.error('[Audit] delete course log failed:', e.message)
+      );
     }
   }
 
@@ -234,7 +256,7 @@ export class CatalogService {
     return { booklets, total, page, limit };
   }
 
-  async createBooklet({ schoolId, courseId, divisionId, title, description, currentPrice, stock = 0, imageUrl, isActive = true }) {
+  async createBooklet({ schoolId, courseId, divisionId, title, description, currentPrice, stock = 0, imageUrl, isActive = true }, adminId = null) {
     if (currentPrice < 0) {
       const err = new Error('price must be non-negative');
       err.code = 'CAT_005';
@@ -260,8 +282,8 @@ export class CatalogService {
       throw err;
     }
 
-    return prisma.$transaction(async (tx) => {
-      const booklet = await tx.booklet.create({
+    const booklet = await prisma.$transaction(async (tx) => {
+      const b = await tx.booklet.create({
         data: { schoolId, courseId, divisionId, title, description, currentPrice, stock, imageUrl, isActive },
       });
 
@@ -275,17 +297,25 @@ export class CatalogService {
         await tx.studentBookletProgress.createMany({
           data: students.map((s) => ({
             studentId: s.id,
-            bookletId: booklet.id,
+            bookletId: b.id,
             status: 'pending',
           })),
         });
       }
 
-      return booklet;
+      return b;
     });
+
+    if (adminId) {
+      adminLogService.log(adminId, 'create', 'booklet', booklet.id, { title }).catch(
+        (e) => console.error('[Audit] create booklet log failed:', e.message)
+      );
+    }
+
+    return booklet;
   }
 
-  async updateBooklet(id, { courseId, divisionId, title, description, currentPrice, stock, imageUrl, isActive }) {
+  async updateBooklet(id, { courseId, divisionId, title, description, currentPrice, stock, imageUrl, isActive }, adminId = null) {
     if (currentPrice !== undefined && currentPrice < 0) {
       const err = new Error('price must be non-negative');
       err.code = 'CAT_005';
@@ -313,7 +343,7 @@ export class CatalogService {
       throw err;
     }
 
-    return prisma.booklet.update({
+    const updated = await prisma.booklet.update({
       where: { id },
       data: {
         courseId,
@@ -326,15 +356,36 @@ export class CatalogService {
         ...(isActive !== undefined && { isActive }),
       },
     });
+
+    if (adminId) {
+      adminLogService.log(adminId, 'update', 'booklet', id, { title }).catch(
+        (e) => console.error('[Audit] update booklet log failed:', e.message)
+      );
+    }
+
+    return updated;
   }
 
-  async deleteBooklet(id) {
+  async deleteBooklet(id, adminId = null) {
+    // Fetch title for audit before deleting
+    let bookletTitle = null;
+    if (adminId) {
+      const booklet = await prisma.booklet.findUnique({ where: { id }, select: { title: true } });
+      bookletTitle = booklet?.title || null;
+    }
+
     const result = await prisma.booklet.deleteMany({ where: { id } });
     if (result.count === 0) {
       const err = new Error('booklet not found');
       err.code = 'CAT_003';
       err.status = 404;
       throw err;
+    }
+
+    if (adminId) {
+      adminLogService.log(adminId, 'delete', 'booklet', id, { title: bookletTitle }).catch(
+        (e) => console.error('[Audit] delete booklet log failed:', e.message)
+      );
     }
   }
 }

@@ -24,6 +24,7 @@ let adminToken, userToken;
 let availableBooklets, smallStockBooklet, testCourse, testDivision;
 let studentUser, studentEmail, studentPassword;
 let createdOrderId;
+let transferOrderId;
 
 beforeAll(async () => {
   await cleanupTestData();
@@ -376,5 +377,90 @@ describe('Cancel order (student)', () => {
 
     const booklet = await prisma.booklet.findUnique({ where: { id: items[0].bookletId } });
     expect(Number(booklet.stock)).toBeGreaterThanOrEqual(cancelBookletStock);
+  });
+});
+
+/* ─── Transfer Payment Flow ─────────────────────────────── */
+
+describe('POST /api/orders with transfer payment method', () => {
+  let transferUserToken, transferBookletId;
+
+  beforeAll(async () => {
+    // Use last booklet from main beforeAll
+    if (availableBooklets && availableBooklets.length > 0) {
+      transferBookletId = availableBooklets[0].id;
+    }
+  });
+
+  it('accepts transfer as valid payment method and creates order', async () => {
+    if (!transferBookletId) return;
+
+    // Add item to cart first
+    await agent
+      .post('/api/cart/items')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ booklet_id: transferBookletId, quantity: 1 });
+
+    const res = await agent
+      .post('/api/orders')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ payment_method: 'transfer' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.paymentMethod).toBe('transfer');
+    expect(res.body.data.paymentStatus).toBe('pending');
+    expect(res.body.data.status).toBe('pending');
+    transferOrderId = res.body.data.id;
+  });
+
+  it('rejects invalid payment method', async () => {
+    const res = await agent
+      .post('/api/orders')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ payment_method: 'invalid_method' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('PAY_002');
+  });
+});
+
+describe('Admin: confirm transfer payment', () => {
+  it('POST /admin/orders/:id/confirm-transfer confirms a transfer payment', async () => {
+    if (!transferOrderId) return;
+
+    const res = await agent
+      .post(`/api/admin/orders/${transferOrderId}/confirm-transfer`)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.message).toBe('transfer payment confirmed');
+  });
+
+  it('rejects double confirmation', async () => {
+    if (!transferOrderId) return;
+
+    const res = await agent
+      .post(`/api/admin/orders/${transferOrderId}/confirm-transfer`)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('PAY_003');
+  });
+
+  it('non-admin gets 403 on confirm-transfer', async () => {
+    if (!transferOrderId) return;
+
+    const res = await agent
+      .post(`/api/admin/orders/${transferOrderId}/confirm-transfer`)
+      .set('Authorization', `Bearer ${userToken}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  it('unauthenticated gets 401 on confirm-transfer', async () => {
+    const res = await agent
+      .post(`/api/admin/orders/some-id/confirm-transfer`);
+
+    expect(res.status).toBe(401);
   });
 });

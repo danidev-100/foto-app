@@ -12,6 +12,7 @@ import cartRoutes from './routes/cart.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import checkoutRoutes from './routes/checkout.routes.js';
 import webhookRoutes from './routes/webhook.routes.js';
+import { config } from './config.js';
 import { errorMiddleware } from './middleware/error.js';
 import { authMiddleware } from './middleware/auth.js';
 import { getBankDetails } from './controllers/config.controller.js';
@@ -260,11 +261,10 @@ app.use(cors({
 // Rate limiting
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20,                   // 20 attempts per window per IP
+  max: config.authRateLimitMax, // configurable via AUTH_RATE_LIMIT_MAX env
   standardHeaders: true,
   legacyHeaders: false,
   validate: { xForwardedForHeader: false },
-  keyGenerator: (req) => req.ip || req.connection?.remoteAddress || 'unknown',
   message: { success: false, error: { code: 'RATE_001', message: 'demasiados intentos, intentá de nuevo en 15 minutos' } },
 });
 

@@ -117,6 +117,14 @@ export async function cleanupTestData() {
   const testStudentIds = testStudents.map((s) => s.id);
 
   if (testStudentIds.length > 0) {
+    // Delete reset tokens
+    await prisma.resetToken.deleteMany({
+      where: { studentId: { in: testStudentIds } },
+    });
+    // Delete refresh tokens
+    await prisma.refreshToken.deleteMany({
+      where: { studentId: { in: testStudentIds } },
+    });
     // Delete carts
     await prisma.cartItem.deleteMany({
       where: { cart: { studentId: { in: testStudentIds } } },
@@ -137,6 +145,11 @@ export async function cleanupTestData() {
     }
     await prisma.student.deleteMany({ where: { id: { in: testStudentIds } } });
   }
+
+  // Delete admin logs
+  await prisma.adminLog.deleteMany({
+    where: { adminId: { in: testStudentIds } },
+  });
 
   // Delete test booklets
   await prisma.booklet.deleteMany({

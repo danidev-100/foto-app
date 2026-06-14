@@ -1,6 +1,10 @@
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../lib/prisma.js';
 import { config } from '../config.js';
+import { EmailService } from './email.service.js';
+import { adminLogService } from './admin-log.service.js';
+
+const emailService = new EmailService();
 
 export class PaymentService {
   constructor(gateway) {
@@ -364,7 +368,78 @@ export class PaymentService {
     }
   }
 
-  async confirmCashPayment(orderId) {
+  async confirmTransferPayment(orderId, adminId = null) {
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) {
+      const err = new Error('order or payment not found');
+      err.code = 'INF_001';
+      err.status = 404;
+      throw err;
+    }
+
+    const existingPayment = await prisma.payment.findUnique({ where: { orderId } });
+    if (existingPayment) {
+      if (existingPayment.status !== 'pending') {
+        const err = new Error('payment already processed');
+        err.code = 'PAY_003';
+        err.status = 400;
+        throw err;
+      }
+      if (existingPayment.method !== 'transfer') {
+        const err = new Error('payment method is not transfer');
+        err.code = 'PAY_006';
+        err.status = 400;
+        throw err;
+      }
+
+      const now = new Date();
+      await prisma.payment.update({
+        where: { id: existingPayment.id },
+        data: { status: 'approved', paidAt: now },
+      });
+    } else {
+      // Create payment record on confirm for transfer orders
+      const now = new Date();
+      await prisma.payment.create({
+        data: {
+          id: uuidv4(),
+          orderId,
+          method: 'transfer',
+          status: 'approved',
+          amount: order.total,
+          externalReference: orderId,
+          paidAt: now,
+        },
+      });
+    }
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { paymentStatus: 'paid', status: 'pending' },
+    });
+
+    if (adminId) {
+      adminLogService.log(adminId, 'confirm', 'payment', orderId, { method: 'transfer' }).catch(
+        (e) => console.error('[Audit] transfer payment log failed:', e.message)
+      );
+    }
+
+    // Fire-and-forget payment confirmation email with student info
+    prisma.order.findUnique({
+      where: { id: orderId },
+      include: { student: { select: { email: true, name: true } } },
+    }).then((orderWithStudent) => {
+      if (!orderWithStudent?.student?.email) return;
+      const { email, name } = orderWithStudent.student;
+      emailService.sendPaymentConfirmed(email, {
+        orderId,
+        method: 'transfer',
+        studentName: name,
+      }).catch((e) => console.error('[Email] transfer payment confirmed failed:', e.message));
+    }).catch((e) => console.error('[Email] fetch student for payment notification failed:', e.message));
+  }
+
+  async confirmCashPayment(orderId, adminId = null) {
     const payment = await prisma.payment.findUnique({ where: { orderId } });
     if (!payment) {
       const err = new Error('order or payment not found');
@@ -395,5 +470,25 @@ export class PaymentService {
       where: { id: orderId },
       data: { paymentStatus: 'paid', status: 'pending' },
     });
+
+    if (adminId) {
+      adminLogService.log(adminId, 'confirm', 'payment', orderId, { method: 'cash' }).catch(
+        (e) => console.error('[Audit] cash payment log failed:', e.message)
+      );
+    }
+
+    // Fire-and-forget payment confirmation email with student info
+    prisma.order.findUnique({
+      where: { id: orderId },
+      include: { student: { select: { email: true, name: true } } },
+    }).then((orderWithStudent) => {
+      if (!orderWithStudent?.student?.email) return;
+      const { email, name } = orderWithStudent.student;
+      emailService.sendPaymentConfirmed(email, {
+        orderId,
+        method: 'cash',
+        studentName: name,
+      }).catch((e) => console.error('[Email] cash payment confirmed failed:', e.message));
+    }).catch((e) => console.error('[Email] fetch student for payment notification failed:', e.message));
   }
 }

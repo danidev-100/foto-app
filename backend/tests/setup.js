@@ -5,3 +5,6 @@
 if (!process.env.JWT_SECRET) {
   process.env.JWT_SECRET = 'test-secret-key-for-tests';
 }
+if (!process.env.AUTH_RATE_LIMIT_MAX) {
+  process.env.AUTH_RATE_LIMIT_MAX = '100';
+}

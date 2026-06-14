@@ -3,6 +3,8 @@ import { CatalogController } from '../controllers/catalog.controller.js';
 import { UserController } from '../controllers/user.controller.js';
 import { OrderController } from '../controllers/order.controller.js';
 import { ProgressController } from '../controllers/progress.controller.js';
+import { ExportController } from '../controllers/export.controller.js';
+import { AuditController } from '../controllers/audit.controller.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 
 const router = Router();
@@ -13,6 +15,8 @@ const catalog = new CatalogController();
 const userController = new UserController();
 const orderController = new OrderController();
 const progressController = new ProgressController();
+const exportController = new ExportController();
+const auditController = new AuditController();
 
 // Schools
 router.get('/schools', (req, res) => catalog.listSchools(req, res));
@@ -61,5 +65,19 @@ router.post('/orders/:id/pay-cash', (req, res) => {
     pc.confirmCashPayment(req, res);
   });
 });
+router.post('/orders/:id/confirm-transfer', (req, res) => {
+  import('../controllers/payment.controller.js').then(({ PaymentController }) => {
+    const pc = new PaymentController();
+    pc.confirmTransfer(req, res);
+  });
+});
+
+// Export
+router.get('/export/progress', (req, res) => exportController.exportProgress(req, res));
+router.get('/export/orders', (req, res) => exportController.exportOrders(req, res));
+
+// Audit Logs
+router.get('/audit-logs', (req, res) => auditController.listLogs(req, res));
+router.get('/audit-logs/stats', (req, res) => auditController.getStats(req, res));
 
 export default router;

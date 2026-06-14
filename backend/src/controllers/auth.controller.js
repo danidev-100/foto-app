@@ -38,4 +38,58 @@ export class AuthController {
       return errorJSON(res, 500, 'INF_001', 'internal server error');
     }
   }
+
+  async refresh(req, res) {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return errorJSON(res, 400, 'AUTH_004', 'refreshToken is required');
+    }
+
+    try {
+      const result = await authService.refreshAccessToken({ refreshToken });
+      return successJSON(res, 200, result);
+    } catch (err) {
+      if (err.code === 'AUTH_004') {
+        return errorJSON(res, err.status || 401, 'AUTH_004', err.message);
+      }
+      console.error('Refresh error:', err);
+      return errorJSON(res, 500, 'INF_001', 'internal server error');
+    }
+  }
+
+  async forgotPassword(req, res) {
+    const { email } = req.body;
+    if (!email) {
+      return errorJSON(res, 400, 'AUTH_004', 'email is required');
+    }
+
+    try {
+      const result = await authService.forgotPassword(email);
+      return successJSON(res, 200, result);
+    } catch (err) {
+      console.error('Forgot password error:', err);
+      return errorJSON(res, 500, 'INF_001', 'internal server error');
+    }
+  }
+
+  async resetPassword(req, res) {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) {
+      return errorJSON(res, 400, 'AUTH_004', 'token and newPassword are required');
+    }
+
+    try {
+      const result = await authService.resetPassword({ token, newPassword });
+      return successJSON(res, 200, result);
+    } catch (err) {
+      if (err.code === 'TOKEN_EXPIRED') {
+        return errorJSON(res, 400, 'TOKEN_EXPIRED', 'El token ha expirado');
+      }
+      if (err.code === 'TOKEN_INVALID') {
+        return errorJSON(res, 400, 'TOKEN_INVALID', 'Token inválido o ya utilizado');
+      }
+      console.error('Reset password error:', err);
+      return errorJSON(res, 500, 'INF_001', 'internal server error');
+    }
+  }
 }

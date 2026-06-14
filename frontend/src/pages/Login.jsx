@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import Loading from '../components/Loading';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -126,29 +127,32 @@ export default function Login() {
               />
             </div>
             <div>
-              <label htmlFor="password" className="label-field">Contraseña</label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input-field mt-1.5"
-                placeholder="••••••••"
-                required
-                autoComplete="current-password"
-              />
-            </div>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="password" className="label-field">Contraseña</label>
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </Link>
+                </div>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-field mt-1.5"
+                  placeholder="••••••••"
+                  required
+                  autoComplete="current-password"
+                />
+              </div>
             <button
               type="submit"
               disabled={loading}
               className="btn-primary w-full"
             >
-              {loading ? (
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-              ) : 'Ingresar'}
+              {loading ? <Loading variant="spinner" /> : 'Ingresar'}
             </button>
           </form>
         </div>
