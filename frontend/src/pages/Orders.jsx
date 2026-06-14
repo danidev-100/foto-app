@@ -56,6 +56,14 @@ export default function Orders() {
     }
   };
 
+  // Hide transfer orders until admin confirms the payment
+  const visibleOrders = orders.filter(
+    (o) => !(o.paymentMethod === 'transfer' && o.paymentStatus !== 'paid')
+  );
+  const hasUnconfirmedTransfer = orders.some(
+    (o) => o.paymentMethod === 'transfer' && o.paymentStatus !== 'paid'
+  );
+
   useEffect(() => {
     // Check URL params
     const params = new URLSearchParams(window.location.search);
@@ -194,7 +202,7 @@ export default function Orders() {
         <p className="mt-1 text-surface-500 dark:text-surface-400">Seguimiento de tus encargos de cuadernillos.</p>
       </div>
 
-      {mpStatus === 'success' && orders.length === 0 && (
+      {mpStatus === 'success' && visibleOrders.length === 0 && !hasUnconfirmedTransfer && (
         <div className="card p-6 mb-6 text-center">
           <Loading variant="spinner" />
           <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-100 mt-4">Procesando tu pago...</h3>
@@ -214,9 +222,9 @@ export default function Orders() {
           <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-100">El pago no se pudo completar</h3>
           <p className="mt-1 text-surface-500 dark:text-surface-400">
             El pago con Mercado Pago no se realizó. No se creó ningún pedido.
-            {orders.length === 0 && ' Volvé al catálogo para intentar de nuevo.'}
+            {visibleOrders.length === 0 && !hasUnconfirmedTransfer && ' Volvé al catálogo para intentar de nuevo.'}
           </p>
-          {orders.length === 0 && (
+          {visibleOrders.length === 0 && !hasUnconfirmedTransfer && (
             <button onClick={() => window.location.href = '/'} className="btn-primary mt-6">
               Ver cuadernillos
             </button>
@@ -224,15 +232,32 @@ export default function Orders() {
         </div>
       )}
 
-      {orders.length === 0 && !mpStatus ? (
-        <EmptyState
-          message="No tenés pedidos aún"
-          description="Encargá tus cuadernillos desde el catálogo."
-          action={{ label: 'Ver cuadernillos', onClick: () => window.location.href = '/' }}
-        />
+      {visibleOrders.length === 0 && !mpStatus ? (
+        hasUnconfirmedTransfer ? (
+          <div className="card p-8 text-center">
+            <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-100">Transferencia pendiente</h3>
+            <p className="mt-2 text-surface-500 dark:text-surface-400 max-w-sm mx-auto">
+              El pedido se va a activar automáticamente cuando el administrador confirme la transferencia.
+            </p>
+            <button onClick={() => window.location.href = '/'} className="btn-primary mt-6">
+              Ver cuadernillos
+            </button>
+          </div>
+        ) : (
+          <EmptyState
+            message="No tenés pedidos aún"
+            description="Encargá tus cuadernillos desde el catálogo."
+            action={{ label: 'Ver cuadernillos', onClick: () => window.location.href = '/' }}
+          />
+        )
       ) : (
         <div className="space-y-4">
-          {orders.map((order) => {
+          {visibleOrders.map((order) => {
             const status = statusConfig[order.status] || statusConfig.pending;
             const showPayButton = order.paymentMethod === 'mercadopago' && order.paymentStatus !== 'paid' && order.status !== 'cancelled';
             const showCancelButton = order.status === 'pending';
