@@ -117,10 +117,10 @@ export default function Catalog({ onCartUpdate }) {
   const handleAdd = async (booklet) => {
     try {
       await addToCart({ booklet_id: booklet.id, quantity: 1 });
-      toast.success(`"${booklet.title}" agregado al carrito`);
       onCartUpdate?.();
+      queueMicrotask(() => toast.success('"' + booklet.title + '" agregado al carrito'));
     } catch {
-      toast.error('Error al agregar al carrito');
+      queueMicrotask(() => toast.error('Error al agregar al carrito'));
     }
   };
 
