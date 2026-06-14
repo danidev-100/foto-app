@@ -12,7 +12,7 @@ export default function Cart() {
   const [updating, setUpdating] = useState(null);
   const [processing, setProcessing] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     getCart().then(({ data }) => setCart(data.data)).finally(() => setLoading(false));

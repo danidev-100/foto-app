@@ -63,7 +63,7 @@ export default function Catalog({ onCartUpdate }) {
   const [booklets, setBooklets] = useState([]);
   const [loadingBooklets, setLoadingBooklets] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const toast = useToast();
 
   const loadData = async () => {
     setLoading(true);
@@ -117,10 +117,10 @@ export default function Catalog({ onCartUpdate }) {
   const handleAdd = async (booklet) => {
     try {
       await addToCart({ booklet_id: booklet.id, quantity: 1 });
+      toast.success('"' + booklet.title + '" agregado al carrito');
       onCartUpdate?.();
-      queueMicrotask(() => toast.success('"' + booklet.title + '" agregado al carrito'));
     } catch {
-      queueMicrotask(() => toast.error('Error al agregar al carrito'));
+      toast.error('Error al agregar al carrito');
     }
   };
 

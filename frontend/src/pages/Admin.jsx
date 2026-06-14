@@ -61,7 +61,7 @@ export default function Admin() {
   const [studentNames, setStudentNames] = useState({});
   const pendingCount = useMemo(() => orders.filter((o) => o.order?.status === 'pending').length, [orders]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const toast = useToast();
 
   // Courses tab state
   const [courseCreateMode, setCourseCreateMode] = useState('single');

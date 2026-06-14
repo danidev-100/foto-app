@@ -13,7 +13,7 @@ import Loading from '../components/Loading';
 
 export default function ContabilidadTab() {
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('progreso');
   const [progressSummary, setProgressSummary] = useState([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState('');

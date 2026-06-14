@@ -29,7 +29,7 @@ export default function Orders() {
   const [bankDetails, setBankDetails] = useState(null);
   const [bankModalOpen, setBankModalOpen] = useState(false);
   const pollRef = useRef(null);
-  const { toast } = useToast();
+  const toast = useToast();
 
   const loadOrders = async (quiet) => {
     if (!quiet) setLoading(true);
@@ -358,7 +358,7 @@ export default function Orders() {
 }
 
 function CopyField({ label, value }) {
-  const { toast } = useToast();
+  const toast = useToast();
 
   const handleCopy = async () => {
     try {
