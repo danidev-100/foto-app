@@ -269,7 +269,6 @@ export default function Orders() {
                             </div>
                             <div className="flex flex-col">
                               <span className="text-sm text-surface-700 dark:text-surface-300">{item.title}</span>
-                              <span className="mt-0.5"><Badge variant={item.status === 'pending' ? 'warning' : item.status === 'ready' ? 'info' : item.status === 'delivered' ? 'success' : 'error'} size="sm">{itemStatus.label}</Badge></span>
                             </div>
                           </div>
                           <span className="text-sm font-medium text-surface-900 dark:text-surface-100">{formatPrice(item.unitPrice * item.quantity)}</span>

@@ -6,7 +6,6 @@ import {
   adminGetOrders, adminUpdateOrderStatus,
   adminSearchOrderByID, adminSearchOrdersByStudentName, adminSearchOrdersByBookletTitle,
   adminExportOrders, adminConfirmTransfer,
-  adminGetAuditLogs, adminGetAuditLogStats,
 } from '../api/admin';
 import { listStudents, updateStudent } from '../api/students';
 import api from '../api/client';
@@ -81,14 +80,6 @@ export default function Admin() {
   const [searchBookletTitle, setSearchBookletTitle] = useState('');
   const [searchBookletResults, setSearchBookletResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
-
-  // Audit log state
-  const [auditLogs, setAuditLogs] = useState([]);
-  const [auditLogTotal, setAuditLogTotal] = useState(0);
-  const [auditLogPage, setAuditLogPage] = useState(1);
-  const [auditLogStats, setAuditLogStats] = useState([]);
-  const [auditLogFilter, setAuditLogFilter] = useState({ entity: '', action: '' });
-  const [auditLogLoading, setAuditLogLoading] = useState(false);
 
   // Export + Transfer state
   const [csvLoading, setCsvLoading] = useState(false);
@@ -406,38 +397,9 @@ export default function Admin() {
     );
   };
 
-  const loadAuditLogs = async (page = 1) => {
-    setAuditLogLoading(true);
-    try {
-      const params = { page, limit: 20 };
-      if (auditLogFilter.entity) params.entity = auditLogFilter.entity;
-      if (auditLogFilter.action) params.action = auditLogFilter.action;
-      const res = await adminGetAuditLogs(params);
-      const data = res.data;
-      setAuditLogs(data.data?.logs || data.logs || []);
-      setAuditLogTotal(data.pagination?.total || 0);
-      setAuditLogPage(page);
-    } catch {
-      toast.error('Error al cargar registros de auditoría');
-    } finally {
-      setAuditLogLoading(false);
-    }
-  };
-
-  const loadAuditLogStats = async () => {
-    try {
-      const res = await adminGetAuditLogStats();
-      const data = res.data;
-      setAuditLogStats(data.data?.stats || data.stats || []);
-    } catch {
-      // Silently fail — stats are non-critical
-    }
-  };
-
   useEffect(() => { loadData(); }, []);
   useEffect(() => { if (activeTab === 'orders') loadOrders(); }, [activeTab]);
   useEffect(() => { if (activeTab === 'users') loadStudents(); }, [activeTab]);
-  useEffect(() => { if (activeTab === 'audit') { loadAuditLogs(); loadAuditLogStats(); } }, [activeTab]);
 
   const loadStudents = async (page = studentsPage) => {
     setStudentsLoading(true);
@@ -640,28 +602,11 @@ export default function Admin() {
 
   const formatPrice = (cents) => `$${(toNum(cents) / 100).toLocaleString('es-AR')}`;
 
-  // Format audit log detail into human-readable string
-  const formatAuditDetail = (details, action) => {
-    if (!details) return '—';
-    if (typeof details === 'string') return details;
-    if (details.title) return `«${details.title.slice(0, 40)}»`;
-    if (details.from && details.to) {
-      const statusLabels = { pending: 'Pendiente', ready: 'Listo', delivered: 'Entregado', cancelled: 'Cancelado' };
-      return `${statusLabels[details.from] || details.from} → ${statusLabels[details.to] || details.to}`;
-    }
-    if (details.method) return `Medio: ${details.method === 'cash' ? 'Efectivo' : 'Transferencia'}`;
-    if (details.changes) {
-      const fields = Object.keys(details.changes).slice(0, 2);
-      return `Cambios: ${fields.join(', ')}`;
-    }
-    return JSON.stringify(details).slice(0, 60);
-  };
-
   // Extract division names from description (format: "Divisiones: A, B, C")
   const getDivisionsFromDesc = (desc) => {
     if (!desc) return '';
-    const match = desc.match(/Divisiones:\s*(.+)/);
-    return match ? match[1].replace(/\s*\(.*\)/, '') : '';
+    const match = desc.match(/Divisiones:\s*([^)]+)/);
+    return match ? match[1].trim() : '';
   };
 
   const availableDivisions = selLevel && selGrade
@@ -759,16 +704,7 @@ export default function Admin() {
           >
             Contabilidad
           </button>
-          <button
-            onClick={() => setActiveTab('audit')}
-            className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-colors ${
-              activeTab === 'audit'
-                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-300 dark:ring-primary-700'
-                : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700'
-            }`}
-          >
-            Auditoría
-          </button>
+
       </div>
 
       {/* Booklets Tab */}
@@ -1843,155 +1779,7 @@ export default function Admin() {
       {/* Contabilidad Tab */}
       {activeTab === 'contabilidad' && <ContabilidadTab />}
 
-      {/* Auditoría Tab */}
-      {activeTab === 'audit' && (
-        <div className="space-y-6">
-          {/* Stats cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-            {/* Total card */}
-            <div className="card p-4 text-center bg-surface-50 dark:bg-surface-800 text-surface-700 dark:text-surface-300 ring-1 ring-surface-200 dark:ring-surface-700">
-              <p className="text-2xl font-bold">
-                {auditLogStats.reduce((sum, s) => sum + (s.count || 0), 0)}
-              </p>
-              <p className="text-xs font-medium mt-1">Total</p>
-            </div>
-            {['create', 'update', 'delete', 'confirm'].map((action) => {
-              const stat = auditLogStats.find((s) => s.action === action);
-              const labels = { create: 'Creaciones', update: 'Actualizaciones', delete: 'Eliminaciones', confirm: 'Confirmaciones' };
-              const colors = { create: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 ring-green-200 dark:ring-green-800',
-                update: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 ring-blue-200 dark:ring-blue-800',
-                delete: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 ring-red-200 dark:ring-red-800',
-                confirm: 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 ring-purple-200 dark:ring-purple-800' };
-              return (
-                <div key={action} className={`card p-4 text-center ${colors[action]}`}>
-                  <p className="text-2xl font-bold">{stat?.count || 0}</p>
-                  <p className="text-xs font-medium mt-1">{labels[action]}</p>
-                </div>
-              );
-            })}
-          </div>
 
-          {/* Filters */}
-          <div className="card p-4">
-            <div className="flex gap-4 items-end flex-wrap">
-              <div>
-                <label className="label-field">Entidad</label>
-                <select
-                  value={auditLogFilter.entity}
-                  onChange={(e) => setAuditLogFilter({ ...auditLogFilter, entity: e.target.value })}
-                  className="input-field mt-1"
-                >
-                  <option value="">Todas</option>
-                  <option value="booklet">Cuadernillos</option>
-                  <option value="course">Cursos</option>
-                  <option value="order">Pedidos</option>
-                  <option value="payment">Pagos</option>
-                  <option value="student">Usuarios</option>
-                </select>
-              </div>
-              <div>
-                <label className="label-field">Acción</label>
-                <select
-                  value={auditLogFilter.action}
-                  onChange={(e) => setAuditLogFilter({ ...auditLogFilter, action: e.target.value })}
-                  className="input-field mt-1"
-                >
-                  <option value="">Todas</option>
-                  <option value="create">Crear</option>
-                  <option value="update">Actualizar</option>
-                  <option value="delete">Eliminar</option>
-                  <option value="confirm">Confirmar</option>
-                </select>
-              </div>
-              <button onClick={() => loadAuditLogs(1)} className="btn-primary text-sm">
-                Filtrar
-              </button>
-            </div>
-          </div>
-
-          {/* Logs Table */}
-          <div className="card overflow-x-auto">
-            {auditLogLoading ? (
-              <Loading variant="spinner" className="py-12" />
-            ) : (
-              <>
-                <table className="w-full text-sm">
-                  <thead className="hidden md:table-header-group bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
-                    <tr>
-                      <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Fecha/Hora</th>
-                      <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Acción</th>
-                      <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Entidad</th>
-                      <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Admin</th>
-                      <th className="text-left px-5 py-3 font-medium text-surface-600 dark:text-surface-400">Detalle</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
-                    {auditLogs.map((log) => (
-                      <tr key={log.id} className="flex flex-col md:table-row border-b md:border-b-0 border-surface-100 dark:border-surface-700 last:border-b-0 hover:bg-surface-50 dark:hover:bg-surface-800/50">
-                        <td className="flex items-center justify-between md:table-cell px-5 py-3 text-surface-500 dark:text-surface-400">
-                          <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Fecha/Hora</span>
-                          <span className="text-right md:text-left text-xs">
-                            {new Date(log.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </td>
-                        <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                          <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Acción</span>
-                          <span className="text-right md:text-left">
-                            <Badge variant={
-                              log.action === 'create' ? 'success' :
-                              log.action === 'update' ? 'info' :
-                              log.action === 'delete' ? 'error' : 'warning'
-                            } size="sm">
-                              {log.action === 'create' ? 'Crear' :
-                               log.action === 'update' ? 'Actualizar' :
-                               log.action === 'delete' ? 'Eliminar' : 'Confirmar'}
-                            </Badge>
-                          </span>
-                        </td>
-                        <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                          <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Entidad</span>
-                          <span className="text-right md:text-left text-surface-700 dark:text-surface-300 font-medium capitalize">
-                            {log.entity === 'booklet' ? 'Cuadernillo' :
-                             log.entity === 'course' ? 'Curso' :
-                             log.entity === 'order' ? 'Pedido' :
-                             log.entity === 'payment' ? 'Pago' : 'Usuario'}
-                          </span>
-                        </td>
-                        <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                          <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Admin</span>
-                          <span className="text-right md:text-left text-xs font-mono text-surface-500 dark:text-surface-400">
-                            {log.adminId?.length > 12 ? log.adminId.slice(0, 12) + '…' : log.adminId || '—'}
-                          </span>
-                        </td>
-                        <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                          <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Detalle</span>
-                          <span className="text-right md:text-left text-xs text-surface-600 dark:text-surface-400 max-w-xs truncate">
-                            {log.details ? formatAuditDetail(log.details, log.action) : '—'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {auditLogs.length === 0 && (
-                  <EmptyState message="No hay registros de auditoría." />
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Pagination */}
-          {auditLogTotal > 20 && (
-            <div className="px-2 py-4">
-              <Pagination
-                currentPage={auditLogPage}
-                totalPages={Math.ceil(auditLogTotal / 20)}
-                onPageChange={(page) => loadAuditLogs(page)}
-              />
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Delete booklet confirmation */}
       <ConfirmDialog

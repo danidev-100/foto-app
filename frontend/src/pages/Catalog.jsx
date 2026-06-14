@@ -117,7 +117,7 @@ export default function Catalog({ onCartUpdate }) {
   const handleAdd = async (booklet) => {
     try {
       await addToCart({ booklet_id: booklet.id, quantity: 1 });
-      toast.success('"' + booklet.title + '" agregado al carrito');
+      toast.success('Cuadernillo agregado al carrito con éxito');
       onCartUpdate?.();
     } catch {
       toast.error('Error al agregar al carrito');
@@ -129,8 +129,8 @@ export default function Catalog({ onCartUpdate }) {
 
   const getDivisionsFromDesc = (desc) => {
     if (!desc) return '';
-    const match = desc.match(/Divisiones:\s*(.+)/);
-    return match ? match[1].replace(/\s*\(.*\)/, '') : '';
+    const match = desc.match(/Divisiones:\s*([^)]+)/);
+    return match ? match[1].trim() : '';
   };
 
   if (loading) {

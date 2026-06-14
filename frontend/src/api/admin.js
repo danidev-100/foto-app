@@ -44,6 +44,4 @@ export const adminExportOrders = () => api.get('/admin/export/orders', { respons
 // Transfer
 export const adminConfirmTransfer = (id) => api.post(`/admin/orders/${id}/confirm-transfer`);
 
-// Audit Logs
-export const adminGetAuditLogs = (params) => api.get('/admin/audit-logs', { params });
-export const adminGetAuditLogStats = () => api.get('/admin/audit-logs/stats');
+
