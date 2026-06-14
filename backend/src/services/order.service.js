@@ -235,6 +235,28 @@ export class OrderService {
     return { order: toJSONSafe(order), items: items.map(toJSONSafe) };
   }
 
+  async setPaymentReference(studentId, orderId, reference) {
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!order || order.studentId !== studentId) {
+      const err = new Error('order not found');
+      err.code = 'INF_001';
+      err.status = 404;
+      throw err;
+    }
+    if (order.paymentMethod !== 'transfer') {
+      const err = new Error('payment method is not transfer');
+      err.code = 'PAY_006';
+      err.status = 400;
+      throw err;
+    }
+
+    const updated = await prisma.order.update({
+      where: { id: orderId },
+      data: { notes: `Comprobante: ${reference}` },
+    });
+    return toJSONSafe(updated);
+  }
+
   async cancelOrder(studentId, orderId) {
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || order.studentId !== studentId) {

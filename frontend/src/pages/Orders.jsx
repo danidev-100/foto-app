@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getOrders, cancelOrder, initiatePayment } from '../api/orders';
+import { getOrders, cancelOrder, initiatePayment, setPaymentReference } from '../api/orders';
 import api from '../api/client';
 import Badge from '../components/Badge';
 import EmptyState from '../components/EmptyState';
@@ -28,6 +28,10 @@ export default function Orders() {
   const [transferSuccess, setTransferSuccess] = useState(null); // { orderId }
   const [bankDetails, setBankDetails] = useState(null);
   const [bankModalOpen, setBankModalOpen] = useState(false);
+  const [paymentRef, setPaymentRef] = useState('');
+  const [paymentRefSaving, setPaymentRefSaving] = useState(false);
+  const [paymentRefSaved, setPaymentRefSaved] = useState(false);
+  const [paymentRefError, setPaymentRefError] = useState('');
   const pollRef = useRef(null);
   const toast = useToast();
 
@@ -142,6 +146,26 @@ export default function Orders() {
       }
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handleSavePaymentRef = async () => {
+    const ref = paymentRef.trim();
+    if (!ref) {
+      setPaymentRefError('Ingresá el número de comprobante');
+      return;
+    }
+    if (!transferSuccess?.orderId) return;
+    setPaymentRefSaving(true);
+    setPaymentRefError('');
+    try {
+      await setPaymentReference(transferSuccess.orderId, ref);
+      setPaymentRefSaved(true);
+      toast.success('Comprobante registrado con éxito');
+    } catch {
+      setPaymentRefError('Error al guardar el comprobante');
+    } finally {
+      setPaymentRefSaving(false);
     }
   };
 
@@ -377,6 +401,40 @@ export default function Orders() {
           <Loading variant="spinner" className="py-8" />
         )}
       </Modal>
+
+      {/* ── Payment Reference Form ── */}
+      {transferSuccess && !bankModalOpen && !paymentRefSaved && (
+        <div className="card p-6 mt-6">
+          <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-2">
+            Registrá tu comprobante
+          </h3>
+          <p className="text-sm text-surface-500 dark:text-surface-400 mb-4">
+            Ingresá el número de comprobante o referencia de la transferencia para que el administrador pueda verificarlo.
+          </p>
+          <div className="flex gap-3 items-start">
+            <div className="flex-1">
+              <input
+                type="text"
+                value={paymentRef}
+                onChange={(e) => { setPaymentRef(e.target.value); setPaymentRefError(''); }}
+                className={`input-field ${paymentRefError ? 'border-red-400 ring-1 ring-red-400' : ''}`}
+                placeholder="Ej: 1234567890"
+                disabled={paymentRefSaving}
+              />
+              {paymentRefError && (
+                <p className="text-xs text-red-500 mt-1">{paymentRefError}</p>
+              )}
+            </div>
+            <button
+              onClick={handleSavePaymentRef}
+              disabled={paymentRefSaving}
+              className="btn-primary min-h-[44px]"
+            >
+              {paymentRefSaving ? 'Guardando...' : 'Enviar comprobante'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

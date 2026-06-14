@@ -1359,10 +1359,15 @@ export default function Admin() {
                     </td>
                     <td className="flex items-center justify-between md:table-cell px-5 py-3">
                       <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Pago</span>
-                      <span>
+                      <span className="flex flex-col gap-1 items-end">
                         <Badge variant={searchOrderResult.order.paymentMethod === 'cash' ? 'success' : searchOrderResult.order.paymentMethod === 'transfer' ? 'warning' : 'info'} size="sm">
                           {searchOrderResult.order.paymentMethod === 'cash' ? 'Efectivo' : searchOrderResult.order.paymentMethod === 'transfer' ? 'Transferencia' : 'Mercado Pago'}
                         </Badge>
+                        {searchOrderResult.order.paymentMethod === 'transfer' && searchOrderResult.order.notes && (
+                          <span className="text-xs text-surface-400 dark:text-surface-500 max-w-[180px] truncate" title={searchOrderResult.order.notes}>
+                            📎 {searchOrderResult.order.notes.replace('Comprobante: ', '')}
+                          </span>
+                        )}
                       </span>
                     </td>
                   </tr>
@@ -1671,6 +1676,12 @@ export default function Admin() {
                                       </button>
                                     )}
                                   </div>
+                                  {/* Payment reference (comprobante) */}
+                                  {order.paymentMethod === 'transfer' && order.notes && (
+                                    <span className="text-xs text-surface-500 dark:text-surface-400 max-w-[200px] truncate" title={order.notes}>
+                                      📎 {order.notes.replace('Comprobante: ', '')}
+                                    </span>
+                                  )}
                                   {/* Confirm transfer button */}
                                   {order.paymentMethod === 'transfer' && order.paymentStatus === 'pending' && order.status === 'pending' && (
                                     <button

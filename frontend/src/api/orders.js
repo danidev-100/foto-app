@@ -9,3 +9,7 @@ export const initiatePayment = (orderId, method) =>
 
 // Two-phase MP checkout: does NOT create an order until MP confirms payment
 export const initMPCheckout = () => api.post('/checkout/mp');
+
+// Payment reference for transfer (comprobante)
+export const setPaymentReference = (orderId, reference) =>
+  api.patch(`/orders/${orderId}/payment-reference`, { reference });

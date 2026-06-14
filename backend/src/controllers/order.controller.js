@@ -43,6 +43,21 @@ export class OrderController {
     }
   }
 
+  async setPaymentReference(req, res) {
+    const { reference } = req.body;
+    if (!reference || !reference.trim()) {
+      return errorJSON(res, 400, 'AUTH_004', 'reference is required');
+    }
+    try {
+      const order = await orderService.setPaymentReference(req.studentId, req.params.id, reference.trim());
+      return successJSON(res, 200, order);
+    } catch (err) {
+      if (err.code === 'INF_001') return errorJSON(res, 404, 'INF_001', 'order not found');
+      if (err.code === 'PAY_006') return errorJSON(res, 400, 'PAY_006', 'payment method is not transfer');
+      return errorJSON(res, 500, 'INF_001', 'failed to save payment reference');
+    }
+  }
+
   async cancelOrder(req, res) {
     try {
       const order = await orderService.cancelOrder(req.studentId, req.params.id);

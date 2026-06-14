@@ -18,4 +18,7 @@ router.post('/:id/cancel', (req, res) => orderController.cancelOrder(req, res));
 // Payment: initiate payment for an order
 router.post('/:id/pay', (req, res) => paymentController.initiatePayment(req, res));
 
+// Payment reference (transfer comprobante)
+router.patch('/:id/payment-reference', (req, res) => orderController.setPaymentReference(req, res));
+
 export default router;
