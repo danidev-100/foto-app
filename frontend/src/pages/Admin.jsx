@@ -1364,8 +1364,11 @@ export default function Admin() {
                           {searchOrderResult.order.paymentMethod === 'cash' ? 'Efectivo' : searchOrderResult.order.paymentMethod === 'transfer' ? 'Transferencia' : 'Mercado Pago'}
                         </Badge>
                         {searchOrderResult.order.paymentMethod === 'transfer' && searchOrderResult.order.notes && (
-                          <span className="text-xs text-surface-400 dark:text-surface-500 max-w-[180px] truncate" title={searchOrderResult.order.notes}>
-                            📎 {searchOrderResult.order.notes.replace('Comprobante: ', '')}
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-200 dark:ring-indigo-800 max-w-[200px]" title={searchOrderResult.order.notes}>
+                            <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span className="truncate">{searchOrderResult.order.notes.replace('Comprobante: ', '')}</span>
                           </span>
                         )}
                       </span>
@@ -1678,8 +1681,11 @@ export default function Admin() {
                                   </div>
                                   {/* Payment reference (comprobante) */}
                                   {order.paymentMethod === 'transfer' && order.notes && (
-                                    <span className="text-xs text-surface-500 dark:text-surface-400 max-w-[200px] truncate" title={order.notes}>
-                                      📎 {order.notes.replace('Comprobante: ', '')}
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-200 dark:ring-indigo-800" title={order.notes}>
+                                      <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                      </svg>
+                                      <span className="truncate max-w-[160px]">{order.notes.replace('Comprobante: ', '')}</span>
                                     </span>
                                   )}
                                   {/* Confirm transfer button */}
