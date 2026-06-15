@@ -406,11 +406,38 @@ export default function Orders() {
               </p>
             </div>
 
-            {/* Bank data */}
+            {/* Bank data — editable fields */}
             <div className="space-y-3">
-              <CopyField label="Alias" value={bankDetails.alias} />
-              <CopyField label="Banco" value={bankDetails.bankName} />
-              <CopyField label="Titular" value={bankDetails.holder} />
+              <div>
+                <label className="label-field">Alias</label>
+                <input
+                  type="text"
+                  value={bankDetails.alias || ''}
+                  onChange={(e) => setBankDetails({ ...bankDetails, alias: e.target.value })}
+                  className="input-field mt-1.5"
+                  placeholder="Ej: alias.mercadopago"
+                />
+              </div>
+              <div>
+                <label className="label-field">Banco</label>
+                <input
+                  type="text"
+                  value={bankDetails.bankName || ''}
+                  onChange={(e) => setBankDetails({ ...bankDetails, bankName: e.target.value })}
+                  className="input-field mt-1.5"
+                  placeholder="Ej: Banco Santander"
+                />
+              </div>
+              <div>
+                <label className="label-field">Titular</label>
+                <input
+                  type="text"
+                  value={bankDetails.holder || ''}
+                  onChange={(e) => setBankDetails({ ...bankDetails, holder: e.target.value })}
+                  className="input-field mt-1.5"
+                  placeholder="Ej: Juan Pérez"
+                />
+              </div>
             </div>
 
             {/* Divider */}
@@ -455,30 +482,4 @@ export default function Orders() {
   );
 }
 
-function CopyField({ label, value }) {
-  const toast = useToast();
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(value || '');
-      toast.success(`${label} copiado`);
-    } catch {
-      toast.error('Error al copiar');
-    }
-  };
-
-  return (
-    <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-surface-50 dark:bg-surface-800/50">
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">{label}</p>
-        <p className="text-sm font-medium text-surface-900 dark:text-surface-100 truncate mt-0.5">{value || '—'}</p>
-      </div>
-      <button
-        onClick={handleCopy}
-        className="ml-3 px-3 py-1.5 text-xs font-medium rounded-lg text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors shrink-0 min-h-[44px] inline-flex items-center ring-1 ring-primary-200 dark:ring-primary-800"
-      >
-        Copiar
-      </button>
-    </div>
-  );
-}
