@@ -364,28 +364,49 @@ export default function Orders() {
         </div>
       )}
 
-      {/* ── Bank Details Modal ── */}
+      {/* ── Bank Details + Comprobante Modal ── */}
       <Modal
         isOpen={bankModalOpen}
-        onClose={() => setBankModalOpen(false)}
-        title="Datos para la transferencia"
+        onClose={() => !paymentRefSaving && setBankModalOpen(false)}
+        title="Pagar por transferencia"
         size="md"
         footer={
-          <button
-            onClick={() => setBankModalOpen(false)}
-            className="btn-primary"
-          >
-            Entendido
-          </button>
+          paymentRefSaved ? (
+            <button
+              onClick={() => setBankModalOpen(false)}
+              className="btn-primary"
+            >
+              Entendido
+            </button>
+          ) : (
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => setBankModalOpen(false)}
+                disabled={paymentRefSaving}
+                className="btn-secondary flex-1"
+              >
+                Después
+              </button>
+              <button
+                onClick={handleSavePaymentRef}
+                disabled={paymentRefSaving}
+                className="btn-primary flex-1"
+              >
+                {paymentRefSaving ? 'Guardando...' : 'Enviar comprobante'}
+              </button>
+            </div>
+          )
         }
       >
         {bankDetails ? (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
               <p className="text-sm text-indigo-700 dark:text-indigo-300">
-                Transferí el importe exacto del pedido a la siguiente cuenta y el administrador lo confirmará manualmente.
+                Transferí el importe exacto del pedido a la siguiente cuenta y luego registrá el comprobante para que el administrador lo verifique.
               </p>
             </div>
+
+            {/* Bank data */}
             <div className="space-y-3">
               <CopyField label="Banco" value={bankDetails.bankName} />
               <CopyField label="CBU" value={bankDetails.cbu} />
@@ -393,7 +414,38 @@ export default function Orders() {
               <CopyField label="Titular" value={bankDetails.holder} />
               <CopyField label="CUIT" value={bankDetails.cuit} />
             </div>
-            <p className="text-xs text-surface-400 dark:text-surface-500 text-center pt-2">
+
+            {/* Divider */}
+            <hr className="border-surface-200 dark:border-surface-700" />
+
+            {/* Comprobante input */}
+            {!paymentRefSaved ? (
+              <div>
+                <label className="label-field">N° de Comprobante / Referencia</label>
+                <input
+                  type="text"
+                  value={paymentRef}
+                  onChange={(e) => { setPaymentRef(e.target.value); setPaymentRefError(''); }}
+                  className={`input-field mt-1.5 ${paymentRefError ? 'border-red-400 ring-1 ring-red-400' : ''}`}
+                  placeholder="Ej: 1234567890"
+                  disabled={paymentRefSaving}
+                />
+                {paymentRefError && (
+                  <p className="text-xs text-red-500 mt-1.5">{paymentRefError}</p>
+                )}
+              </div>
+            ) : (
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800 text-center">
+                <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                  ✅ Comprobante registrado con éxito
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                  El administrador lo va a verificar y activará el pedido.
+                </p>
+              </div>
+            )}
+
+            <p className="text-xs text-surface-400 dark:text-surface-500 text-center">
               Pedido #{transferSuccess?.orderId?.slice(0, 8) || ''}
             </p>
           </div>
@@ -401,40 +453,6 @@ export default function Orders() {
           <Loading variant="spinner" className="py-8" />
         )}
       </Modal>
-
-      {/* ── Payment Reference Form ── */}
-      {transferSuccess && !bankModalOpen && !paymentRefSaved && (
-        <div className="card p-6 mt-6">
-          <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-2">
-            Registrá tu comprobante
-          </h3>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mb-4">
-            Ingresá el número de comprobante o referencia de la transferencia para que el administrador pueda verificarlo.
-          </p>
-          <div className="flex gap-3 items-start">
-            <div className="flex-1">
-              <input
-                type="text"
-                value={paymentRef}
-                onChange={(e) => { setPaymentRef(e.target.value); setPaymentRefError(''); }}
-                className={`input-field ${paymentRefError ? 'border-red-400 ring-1 ring-red-400' : ''}`}
-                placeholder="Ej: 1234567890"
-                disabled={paymentRefSaving}
-              />
-              {paymentRefError && (
-                <p className="text-xs text-red-500 mt-1">{paymentRefError}</p>
-              )}
-            </div>
-            <button
-              onClick={handleSavePaymentRef}
-              disabled={paymentRefSaving}
-              className="btn-primary min-h-[44px]"
-            >
-              {paymentRefSaving ? 'Guardando...' : 'Enviar comprobante'}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
