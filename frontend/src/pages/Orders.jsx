@@ -408,11 +408,9 @@ export default function Orders() {
 
             {/* Bank data */}
             <div className="space-y-3">
-              <CopyField label="Banco" value={bankDetails.bankName} />
-              <CopyField label="CBU" value={bankDetails.cbu} />
               <CopyField label="Alias" value={bankDetails.alias} />
+              <CopyField label="Banco" value={bankDetails.bankName} />
               <CopyField label="Titular" value={bankDetails.holder} />
-              <CopyField label="CUIT" value={bankDetails.cuit} />
             </div>
 
             {/* Divider */}
