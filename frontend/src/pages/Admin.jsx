@@ -55,6 +55,7 @@ export default function Admin() {
   const [divisions, setDivisions] = useState([]);
   const [schools, setSchools] = useState([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState('');
+  const [ordersSchoolFilter, setOrdersSchoolFilter] = useState('');
   const [booklets, setBooklets] = useState([]);
   const [orders, setOrders] = useState([]);
   const [studentNames, setStudentNames] = useState({});
@@ -502,10 +503,14 @@ export default function Admin() {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!selLevel) newErrors.selLevel = 'Seleccioná un nivel';
-    if (!selGrade) newErrors.selGrade = 'Seleccioná un grado/año';
-    if (selDivisions.length === 0) newErrors.selDivisions = 'Seleccioná al menos una división';
-    if (!matchedCourseId) newErrors.matchedCourse = 'El curso no existe en la base de datos';
+    // In edit mode the booklet keeps its own course/division: the structured
+    // selectors are disabled and course matching is irrelevant.
+    if (!editingBooklet) {
+      if (!selLevel) newErrors.selLevel = 'Seleccioná un nivel';
+      if (!selGrade) newErrors.selGrade = 'Seleccioná un grado/año';
+      if (selDivisions.length === 0) newErrors.selDivisions = 'Seleccioná al menos una división';
+      if (!matchedCourseId) newErrors.matchedCourse = 'El curso no existe en la base de datos';
+    }
 
     if (!bookletForm.title.trim()) newErrors.title = 'El título es obligatorio';
     else if (bookletForm.title.trim().length < 3) newErrors.title = 'El título debe tener al menos 3 caracteres';
@@ -533,7 +538,7 @@ export default function Admin() {
           ...bookletForm,
           description: desc,
           current_price: Math.round(parseFloat(bookletForm.current_price) * 100),
-          stock: 100,
+          stock: editingBooklet.stock ?? 100,
         };
         await adminUpdateBooklet(editingBooklet.id, payload);
         toast.success('Cuadernillo actualizado');
@@ -588,9 +593,25 @@ export default function Admin() {
       toast.success('Cuadernillo eliminado');
       setDeleteBookletConfirm(null);
       loadData();
-    } catch {
-      toast.error('Error al eliminar');
+    } catch (err) {
+      toast.error(`Error al eliminar: ${err.response?.data?.error?.message || err.message || 'error desconocido'}`);
       setDeleteBookletConfirm(null);
+    }
+  };
+
+  const handleToggleBookletActive = async (booklet) => {
+    try {
+      // Backend PUT requires title/course_id/division_id, so send them alongside is_active.
+      await adminUpdateBooklet(booklet.id, {
+        course_id: booklet.courseId,
+        division_id: booklet.divisionId,
+        title: booklet.title,
+        is_active: !booklet.isActive,
+      });
+      toast.success(booklet.isActive ? 'Cuadernillo desactivado (no aparece en el catálogo)' : 'Cuadernillo activado');
+      loadData();
+    } catch (err) {
+      toast.error(`Error al cambiar estado: ${err.response?.data?.error?.message || err.message || 'error desconocido'}`);
     }
   };
 
@@ -627,8 +648,16 @@ export default function Admin() {
     ? booklets.filter(b => b.school?.id === selectedSchoolId)
     : booklets;
 
+  // Filter orders by selected school
+  const filteredOrders = ordersSchoolFilter
+    ? orders.filter((od) => {
+        const school = od.school || od.order?.student?.course?.school;
+        return school && school.id === ordersSchoolFilter;
+      })
+    : orders;
+
   // Group orders by school
-  const groupedOrders = orders.reduce((acc, od) => {
+  const groupedOrders = filteredOrders.reduce((acc, od) => {
     const schoolName = od.school?.name || od.order.student?.course?.school?.name || 'Sin colegio';
     if (!acc[schoolName]) acc[schoolName] = [];
     acc[schoolName].push(od);
@@ -958,7 +987,17 @@ export default function Admin() {
                         >
                           Editar
                         </button>
-                        <button onClick={() => setDeleteBookletConfirm(b.id)} className="text-red-600 hover:text-red-700 text-sm font-medium min-h-[44px] inline-flex items-center">
+                        <button
+                            onClick={() => handleToggleBookletActive(b)}
+                            className={`text-sm font-medium min-h-[44px] inline-flex items-center ${
+                              b.isActive
+                                ? 'text-amber-600 hover:text-amber-700'
+                                : 'text-emerald-600 hover:text-emerald-700'
+                            }`}
+                          >
+                            {b.isActive ? 'Desactivar' : 'Activar'}
+                          </button>
+                          <button onClick={() => setDeleteBookletConfirm(b.id)} className="text-red-600 hover:text-red-700 text-sm font-medium min-h-[44px] inline-flex items-center">
                             Eliminar
                           </button>
                       </span>
@@ -1539,9 +1578,21 @@ export default function Admin() {
 
           {/* All Orders Table — grouped by school */}
           <div className="card overflow-x-auto">
-            <div className="px-5 py-3 bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
+            <div className="px-5 py-3 bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between gap-3 flex-wrap">
               <h4 className="font-semibold text-surface-900 dark:text-surface-100 text-sm">Todos los Pedidos</h4>
-              <button
+              <div className="flex items-center gap-3">
+                <select
+                  value={ordersSchoolFilter}
+                  onChange={(e) => setOrdersSchoolFilter(e.target.value)}
+                  className="input-field text-xs py-1.5 min-h-[44px]"
+                  aria-label="Filtrar pedidos por colegio"
+                >
+                  <option value="">Todos los colegios</option>
+                  {schools.map(s => (
+                    <option key={s.id} value={s.id}>{s.shortName || s.name}</option>
+                  ))}
+                </select>
+                <button
                 onClick={handleDownloadOrdersCSV}
                 disabled={csvLoading}
                 className="btn-secondary text-xs inline-flex items-center gap-1.5 min-h-[44px]"
@@ -1560,9 +1611,10 @@ export default function Admin() {
                   </>
                 )}
               </button>
+              </div>
             </div>
-            {orders.length === 0 ? (
-              <EmptyState message="No hay pedidos." />
+            {filteredOrders.length === 0 ? (
+              <EmptyState message={ordersSchoolFilter ? 'No hay pedidos para este colegio.' : 'No hay pedidos.'} />
             ) : (
               <div className="divide-y divide-surface-100 dark:divide-surface-700">
                 {Object.entries(groupedOrders).map(([schoolName, schoolOrders]) => (

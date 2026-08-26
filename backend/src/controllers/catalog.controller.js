@@ -222,6 +222,7 @@ export class CatalogController {
       return successJSON(res, 200, { message: 'booklet deleted' });
     } catch (err) {
       if (err.code === 'CAT_003') return errorJSON(res, 404, 'CAT_003', 'booklet not found');
+      if (err.code === 'CAT_007') return errorJSON(res, 409, 'CAT_007', err.message);
       return errorJSON(res, 500, 'INF_001', 'failed to delete booklet');
     }
   }

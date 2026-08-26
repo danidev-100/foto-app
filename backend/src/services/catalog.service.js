@@ -374,13 +374,32 @@ export class CatalogService {
       bookletTitle = booklet?.title || null;
     }
 
-    const result = await prisma.booklet.deleteMany({ where: { id } });
-    if (result.count === 0) {
-      const err = new Error('booklet not found');
-      err.code = 'CAT_003';
-      err.status = 404;
-      throw err;
-    }
+    await prisma.$transaction(async (tx) => {
+      const booklet = await tx.booklet.findUnique({ where: { id } });
+      if (!booklet) {
+        const err = new Error('booklet not found');
+        err.code = 'CAT_003';
+        err.status = 404;
+        throw err;
+      }
+
+      // Block deletion when the booklet is part of order history: order_items keep
+      // title/price snapshots and must not be destroyed by a catalog cleanup.
+      const orderItemCount = await tx.orderItem.count({ where: { bookletId: id } });
+      if (orderItemCount > 0) {
+        const err = new Error(
+          `Cannot delete booklet: it is referenced by ${orderItemCount} order item(s). Deactivate it instead to hide it from the catalog.`
+        );
+        err.code = 'CAT_007';
+        err.status = 409;
+        throw err;
+      }
+
+      // Remove derived references (abandoned carts, auto-created progress rows) then the booklet.
+      await tx.cartItem.deleteMany({ where: { bookletId: id } });
+      await tx.studentBookletProgress.deleteMany({ where: { bookletId: id } });
+      await tx.booklet.delete({ where: { id } });
+    });
 
     if (adminId) {
       adminLogService.log(adminId, 'delete', 'booklet', id, { title: bookletTitle }).catch(
