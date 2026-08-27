@@ -11,6 +11,7 @@ export const config = {
   mpAccessToken: process.env.MP_ACCESS_TOKEN || '',
   mpSandbox: process.env.MP_SANDBOX !== 'false',
   mpWebhookSecret: process.env.MP_WEBHOOK_SECRET || '',
+  googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   frontendUrl: process.env.FRONTEND_URL
     || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
     || process.env.CORS_ORIGIN

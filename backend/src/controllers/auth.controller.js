@@ -1,9 +1,46 @@
 import { AuthService } from '../services/auth.service.js';
 import { successJSON, errorJSON } from '../lib/response.js';
+import { config } from '../config.js';
 
 const authService = new AuthService();
 
 export class AuthController {
+  async googleLogin(req, res) {
+    const { idToken } = req.body;
+    if (!idToken) {
+      return errorJSON(res, 400, 'AUTH_004', 'idToken is required');
+    }
+
+    try {
+      const result = await authService.googleLogin({ idToken });
+      return successJSON(res, 200, result);
+    } catch (err) {
+      if (err.code === 'GOOGLE_TOKEN_INVALID') {
+        return errorJSON(res, 401, 'GOOGLE_TOKEN_INVALID', err.message);
+      }
+      if (err.code === 'GOOGLE_NOT_CONFIGURED') {
+        return errorJSON(res, 503, 'GOOGLE_NOT_CONFIGURED', err.message);
+      }
+      if (err.code === 'AUTH_005') {
+        return errorJSON(res, 401, 'AUTH_005', err.message);
+      }
+      if (err.code === 'AUTH_004') {
+        return errorJSON(res, 400, 'AUTH_004', err.message);
+      }
+      console.error('Google login error:', err);
+      return errorJSON(res, 500, 'INF_001', 'internal server error');
+    }
+  }
+
+  /**
+   * Public config — the Google Client ID is public by design (needed by the
+   * browser to initialize the Sign in with Google button). Served from the
+   * backend so the frontend doesn't duplicate env config.
+   */
+  async getGoogleConfig(_req, res) {
+    return successJSON(res, 200, { clientId: config.googleClientId || '' });
+  }
+
   async register(req, res) {
     const { name, email, password, phone, course_id: courseId } = req.body;
     if (!name || !email || !password) {

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { login as loginApi, register as registerApi } from '../api/auth';
+import { login as loginApi, register as registerApi, googleLogin as googleLoginApi } from '../api/auth';
 import { useIdleTimer } from '../hooks/useIdleTimer';
 
 const AuthContext = createContext(null);
@@ -18,6 +18,16 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const { data } = await loginApi({ email, password });
+    const { token, refreshToken, student } = data.data;
+    localStorage.setItem('token', token);
+    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem('student', JSON.stringify(student));
+    setUser(student);
+    return { token, refreshToken, student };
+  };
+
+  const loginWithGoogle = async (idToken) => {
+    const { data } = await googleLoginApi(idToken);
     const { token, refreshToken, student } = data.data;
     localStorage.setItem('token', token);
     if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
@@ -52,7 +62,7 @@ export function AuthProvider({ children }) {
   });
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, loginWithGoogle, register, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

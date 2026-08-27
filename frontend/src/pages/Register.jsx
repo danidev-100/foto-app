@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Loading from '../components/Loading';
+import GoogleButton from '../components/GoogleButton';
 import { useTheme } from '../context/ThemeContext';
 
 export default function Register() {
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
   const { dark, toggle } = useTheme();
   const navigate = useNavigate();
 
@@ -136,6 +137,23 @@ export default function Register() {
               {loading ? <Loading variant="spinner" /> : 'Crear cuenta'}
             </button>
           </form>
+
+          <div className="mt-6">
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-surface-200 dark:bg-surface-700" />
+              <span className="text-xs text-surface-400">o registrate con</span>
+              <div className="h-px flex-1 bg-surface-200 dark:bg-surface-700" />
+            </div>
+            <div className="mt-4 flex justify-center">
+              <GoogleButton
+                dark={dark}
+                onSuccess={async (idToken) => {
+                  await loginWithGoogle(idToken);
+                  navigate('/');
+                }}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

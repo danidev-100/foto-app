@@ -3,13 +3,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import Loading from '../components/Loading';
+import GoogleButton from '../components/GoogleButton';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const { dark, toggle } = useTheme();
   const navigate = useNavigate();
 
@@ -155,6 +156,23 @@ export default function Login() {
               {loading ? <Loading variant="spinner" /> : 'Ingresar'}
             </button>
           </form>
+
+          <div className="mt-6">
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-surface-200 dark:bg-surface-700" />
+              <span className="text-xs text-surface-400">o continuá con</span>
+              <div className="h-px flex-1 bg-surface-200 dark:bg-surface-700" />
+            </div>
+            <div className="mt-4 flex justify-center">
+              <GoogleButton
+                dark={dark}
+                onSuccess={async (idToken) => {
+                  await loginWithGoogle(idToken);
+                  navigate('/');
+                }}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

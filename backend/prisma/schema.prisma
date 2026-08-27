@@ -97,6 +97,7 @@ model Student {
   name          String    @db.VarChar(255)
   email         String    @unique @db.VarChar(255)
   passwordHash  String    @map("password_hash") @db.VarChar(255)
+  googleId      String?   @unique @map("google_id") @db.VarChar(255)
   phone         String?   @db.VarChar(50)
   courseId      String?   @map("course_id")
   isAdmin       Boolean   @default(false) @map("is_admin")

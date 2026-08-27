@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import { OAuth2Client } from 'google-auth-library';
 import { prisma } from '../lib/prisma.js';
 import { config } from '../config.js';
 import { EmailService } from './email.service.js';
@@ -175,6 +176,98 @@ export class AuthService {
       config.jwtSecret,
       { expiresIn: config.jwtExpiration },
     );
+  }
+
+  /**
+   * Sign in with a Google ID token (Google Identity Services).
+   * Verifies the token server-side, then finds the student by email or
+   * creates a new account (random unusable password hash). Issues the same
+   * JWT + refresh token pair as a normal login.
+   */
+  async googleLogin({ idToken }) {
+    if (!idToken) {
+      const err = new Error('idToken is required');
+      err.code = 'AUTH_004';
+      err.status = 400;
+      throw err;
+    }
+
+    if (!config.googleClientId) {
+      const err = new Error('Google login no configurado (falta GOOGLE_CLIENT_ID)');
+      err.code = 'GOOGLE_NOT_CONFIGURED';
+      err.status = 503;
+      throw err;
+    }
+
+    let payload;
+    try {
+      const client = new OAuth2Client(config.googleClientId);
+      const ticket = await client.verifyIdToken({
+        idToken,
+        audience: config.googleClientId,
+      });
+      payload = ticket.getPayload();
+    } catch (err) {
+      const e = new Error('Token de Google inválido');
+      e.code = 'GOOGLE_TOKEN_INVALID';
+      e.status = 401;
+      throw e;
+    }
+
+    if (!payload || !payload.email || !payload.email_verified) {
+      const err = new Error('Cuenta de Google sin email verificado');
+      err.code = 'GOOGLE_TOKEN_INVALID';
+      err.status = 401;
+      throw err;
+    }
+
+    const email = String(payload.email).toLowerCase();
+    const name = payload.name || email.split('@')[0];
+    const googleId = payload.sub;
+
+    let student = await prisma.student.findUnique({ where: { email } });
+
+    if (!student) {
+      // Google-only accounts get a random unusable hash (column is NOT NULL)
+      const passwordHash = await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 12);
+      try {
+        student = await prisma.student.create({
+          data: {
+            id: uuidv4(),
+            name,
+            email,
+            passwordHash,
+            googleId,
+            isAdmin: false,
+            isActive: true,
+          },
+        });
+      } catch (err) {
+        // Concurrent signup with the same email — re-fetch instead of failing
+        if (err?.code === 'P2002') {
+          student = await prisma.student.findUnique({ where: { email } });
+        } else {
+          throw err;
+        }
+      }
+    } else if (!student.googleId) {
+      // Existing account (email/password) — link the Google identity
+      student = await prisma.student.update({
+        where: { id: student.id },
+        data: { googleId },
+      });
+    }
+
+    if (!student.isActive) {
+      const err = new Error('Cuenta desactivada');
+      err.code = 'AUTH_005';
+      err.status = 401;
+      throw err;
+    }
+
+    const token = this.generateToken(student);
+    const refreshToken = await this.generateRefreshToken(student);
+    return { token, refreshToken, student: this.sanitizeStudent(student) };
   }
 
   /**

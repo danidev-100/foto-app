@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 
 import { healthCheck } from './controllers/health.controller.js';
+import { AuthController } from './controllers/auth.controller.js';
 import authRoutes from './routes/auth.routes.js';
 import catalogRoutes from './routes/catalog.routes.js';
 import adminRoutes from './routes/admin.routes.js';
@@ -306,6 +307,12 @@ function sanitizeDecimals(obj) {
 
 // ── Routes ─────────────────────────────────────────────────────────
 app.get('/api/health', healthCheck);
+
+// Public config — intentionally OUTSIDE the /api/auth rate limiter so the
+// login page fetch doesn't consume auth attempt tokens per visit.
+const authController = new AuthController();
+app.get('/api/config/google-login', (req, res) => authController.getGoogleConfig(req, res));
+
 app.use('/api/auth', authRoutes);
 
 // Protected config routes (require auth)
