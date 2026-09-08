@@ -31,6 +31,10 @@ Thumbs.db
 # Temporary
 tmp/
 *.log
+dev-test.*
+
+# Node
+node_modules/
 
 .vercel
 .env*.local

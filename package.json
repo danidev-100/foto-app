@@ -1,0 +1,12 @@
+{
+  "name": "foto-app",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c cyan,magenta \"pnpm --dir backend dev\" \"pnpm --dir frontend dev\"",
+    "dev:backend": "pnpm --dir backend dev",
+    "dev:frontend": "pnpm --dir frontend dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
