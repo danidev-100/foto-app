@@ -11,7 +11,9 @@ initPaymentService(mpGateway);
 initCheckoutService(mpGateway);
 
 // ── Start server ───────────────────────────────────────────────────
-const PORT = config.port;
+// Vercel Backends inyectan el puerto en process.env.PORT; en local/docker
+// se usa config.port (SERVER_PORT).
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : config.port;
 
 process.on('SIGINT', async () => {
   console.log('SIGINT received — shutting down');
