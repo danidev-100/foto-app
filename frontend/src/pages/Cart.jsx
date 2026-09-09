@@ -94,10 +94,10 @@ export default function Cart() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-surface-900">Mi Carrito</h1>
-          <p className="mt-1 text-surface-500">{cart.items.length} {cart.items.length === 1 ? 'item' : 'items'}</p>
+          <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">Mi Carrito</h1>
+          <p className="mt-1 text-surface-500 dark:text-surface-400">{cart.items.length} {cart.items.length === 1 ? 'item' : 'items'}</p>
         </div>
-        <button onClick={() => clearCart().then(() => getCart().then(({ data }) => setCart(data.data)))} className="btn-secondary text-red-600 hover:text-red-700 hover:bg-red-50 ring-red-200">
+        <button onClick={() => clearCart().then(() => getCart().then(({ data }) => setCart(data.data)))} className="btn-secondary text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 ring-red-200 dark:ring-red-700">
           Vaciar carrito
         </button>
       </div>

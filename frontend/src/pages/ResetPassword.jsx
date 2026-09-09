@@ -68,7 +68,7 @@ export default function ResetPassword() {
       <div className="flex-1 flex items-center justify-center px-6 sm:px-8 py-12 relative">
         <button
           onClick={toggle}
-          className="absolute top-4 right-4 p-2 rounded-xl text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100 transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-xl text-surface-400 dark:text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100 transition-colors"
           title={dark ? 'Modo claro' : 'Modo oscuro'}
         >
           {dark ? (
@@ -83,12 +83,12 @@ export default function ResetPassword() {
         </button>
         <div className="w-full max-w-sm">
           <div className="lg:hidden mb-8">
-            <h1 className="text-2xl font-bold text-surface-900">FotoApp</h1>
-            <p className="text-surface-500 mt-1">Creá tu nueva contraseña</p>
+            <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">FotoApp</h1>
+            <p className="text-surface-500 dark:text-surface-400 mt-1">Creá tu nueva contraseña</p>
           </div>
 
-          <h2 className="text-xl font-semibold text-surface-900">Nueva contraseña</h2>
-          <p className="mt-1 text-sm text-surface-500">
+          <h2 className="text-xl font-semibold text-surface-900 dark:text-surface-100">Nueva contraseña</h2>
+          <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">
             Ingresá tu nueva contraseña para restablecer el acceso.
           </p>
 
@@ -136,8 +136,8 @@ export default function ResetPassword() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-surface-500">
-            <Link to="/login" className="text-primary-600 font-medium hover:text-primary-700">
+          <p className="mt-6 text-center text-sm text-surface-500 dark:text-surface-400">
+            <Link to="/login" className="text-primary-600 dark:text-primary-400 font-medium hover:text-primary-700 dark:hover:text-primary-400">
               Volver al inicio de sesión
             </Link>
           </p>

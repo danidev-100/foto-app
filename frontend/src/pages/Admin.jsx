@@ -781,7 +781,7 @@ export default function Admin() {
                 }
                 {schoolHasNoCourses && <option value="" disabled>Sin cursos disponibles</option>}
               </select>
-              {errors.selLevel && <p className="text-xs text-red-500 mt-1">{errors.selLevel}</p>}
+              {errors.selLevel && <p className="text-xs text-red-500 dark:text-red-400 mt-1">{errors.selLevel}</p>}
             </div>
             <div>
               <label className="label-field">Grado / Año</label>
@@ -801,7 +801,7 @@ export default function Admin() {
                   <option key={g.value} value={g.value}>{g.label}</option>
                 ))}
               </select>
-              {errors.selGrade && <p className="text-xs text-red-500 mt-1">{errors.selGrade}</p>}
+              {errors.selGrade && <p className="text-xs text-red-500 dark:text-red-400 mt-1">{errors.selGrade}</p>}
             </div>
             <div>
               <label className="label-field">Divisiones</label>
@@ -823,13 +823,13 @@ export default function Admin() {
                         onChange={() => { toggleDivision(d); setErrors(prev => ({ ...prev, selDivisions: '' })); }}
                         className="sr-only"
                       />
-                      {checked && <span className="text-primary-600">✓</span>}
+                      {checked && <span className="text-primary-600 dark:text-primary-400">✓</span>}
                       {d}
                     </label>
                   );
                 })}
               </div>
-              {errors.selDivisions && <p className="text-xs text-red-500 mt-1">{errors.selDivisions}</p>}
+              {errors.selDivisions && <p className="text-xs text-red-500 dark:text-red-400 mt-1">{errors.selDivisions}</p>}
             </div>
           </div>
 
@@ -849,7 +849,7 @@ export default function Admin() {
                 className={`input-field mt-1.5 ${errors.title ? 'border-red-400 ring-1 ring-red-400' : ''}`}
                 placeholder="Ej: Matemáticas U1"
               />
-              {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
+              {errors.title && <p className="text-xs text-red-500 dark:text-red-400 mt-1">{errors.title}</p>}
             </div>
             <div>
               <label className="label-field">Precio ($)</label>
@@ -861,7 +861,7 @@ export default function Admin() {
                 className={`input-field mt-1.5 ${errors.current_price ? 'border-red-400 ring-1 ring-red-400' : ''}`}
                 placeholder="1500.00"
               />
-              {errors.current_price && <p className="text-xs text-red-500 mt-1">{errors.current_price}</p>}
+              {errors.current_price && <p className="text-xs text-red-500 dark:text-red-400 mt-1">{errors.current_price}</p>}
             </div>
             <div>
               <label className="label-field">Descripción</label>
@@ -924,11 +924,11 @@ export default function Admin() {
                 return (
                   <tr key={b.id} className="flex flex-col md:table-row border-b md:border-b-0 border-surface-100 dark:border-surface-700 last:border-b-0 hover:bg-surface-50 dark:hover:bg-surface-800/50">
                     <td className="flex items-center justify-between md:table-cell px-5 py-3 font-medium text-surface-900 dark:text-surface-100">
-                      <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Título</span>
+                      <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Título</span>
                       <span className="text-right md:text-left">{b.title}</span>
                     </td>
                     <td className="flex items-center justify-between md:table-cell px-5 py-3 text-surface-500 dark:text-surface-400">
-                      <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Curso / División</span>
+                      <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Curso / División</span>
                       <span className="text-right md:text-left">
                         {course?.name}
                         {divNames && (
@@ -939,7 +939,7 @@ export default function Admin() {
                       </span>
                     </td>
                     <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                      <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Colegio</span>
+                      <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Colegio</span>
                       <span className="text-right md:text-left">
                         <div className="flex flex-wrap gap-1">
                           {b.school ? (
@@ -947,21 +947,21 @@ export default function Admin() {
                               {b.school.shortName || b.school.name}
                             </span>
                           ) : (
-                            <span className="text-xs text-surface-400">—</span>
+                            <span className="text-xs text-surface-400 dark:text-surface-500">—</span>
                           )}
                         </div>
                       </span>
                     </td>
                     <td className="flex items-center justify-between md:table-cell px-5 py-3 font-medium text-surface-900 dark:text-surface-100">
-                      <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Precio</span>
+                      <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Precio</span>
                       <span>{formatPrice(b.currentPrice)}</span>
                     </td>
                     <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                      <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Estado</span>
+                      <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Estado</span>
                       <span><Badge variant={b.isActive ? 'success' : 'neutral'} size="sm">{b.isActive ? 'Activo' : 'Inactivo'}</Badge></span>
                     </td>
                     <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                      <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Acciones</span>
+                      <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Acciones</span>
                       <span className="flex gap-2 md:justify-end">
                         <button
                           onClick={() => {
@@ -983,7 +983,7 @@ export default function Admin() {
                               is_active: b.isActive,
                             });
                           }}
-                          className="text-primary-600 hover:text-primary-700 text-sm font-medium min-h-[44px] inline-flex items-center"
+                          className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-400 text-sm font-medium min-h-[44px] inline-flex items-center"
                         >
                           Editar
                         </button>
@@ -991,13 +991,13 @@ export default function Admin() {
                             onClick={() => handleToggleBookletActive(b)}
                             className={`text-sm font-medium min-h-[44px] inline-flex items-center ${
                               b.isActive
-                                ? 'text-amber-600 hover:text-amber-700'
-                                : 'text-emerald-600 hover:text-emerald-700'
+                                ? 'text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-400'
+                                : 'text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-400'
                             }`}
                           >
                             {b.isActive ? 'Desactivar' : 'Activar'}
                           </button>
-                          <button onClick={() => setDeleteBookletConfirm(b.id)} className="text-red-600 hover:text-red-700 text-sm font-medium min-h-[44px] inline-flex items-center">
+                          <button onClick={() => setDeleteBookletConfirm(b.id)} className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400 text-sm font-medium min-h-[44px] inline-flex items-center">
                             Eliminar
                           </button>
                       </span>
@@ -1167,13 +1167,13 @@ export default function Admin() {
                                   <span className="text-sm font-medium text-surface-900 dark:text-surface-100">
                                     {course.name}
                                   </span>
-                                  <span className="ml-2 text-xs text-surface-400">
+                                  <span className="ml-2 text-xs text-surface-400 dark:text-surface-500">
                                     ({course.divisions?.length || 0} divisiones)
                                   </span>
                                 </div>
                                 <button
                                   onClick={() => handleDeleteCourse(course.id, course.name)}
-                                  className="text-red-600 hover:text-red-700 text-sm font-medium"
+                                  className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400 text-sm font-medium"
                                 >
                                   Eliminar
                                 </button>
@@ -1352,7 +1352,7 @@ export default function Admin() {
                 <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
                   <tr className="flex flex-col md:table-row border-b md:border-b-0 border-surface-100 dark:border-surface-700 last:border-b-0 hover:bg-surface-50 dark:hover:bg-surface-800/50">
                     <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                      <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Pedido</span>
+                      <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Pedido</span>
                       <span className="text-right md:text-left">
                         <span className="font-medium text-surface-900 dark:text-surface-100">#{searchOrderResult.order.id.slice(0, 8)}</span>
                         <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
@@ -1361,11 +1361,11 @@ export default function Admin() {
                       </span>
                     </td>
                     <td className="flex items-center justify-between md:table-cell px-5 py-3 text-surface-700 dark:text-surface-300">
-                      <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Usuario</span>
+                      <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Usuario</span>
                       <span className="text-right md:text-left">{searchOrderResult.student_name}</span>
                     </td>
                     <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                      <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Cuadernillos</span>
+                      <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Cuadernillos</span>
                       <span className="text-right md:text-left">
                         <div className="space-y-1">
                           {(searchOrderResult.items || []).map((item) => (
@@ -1389,15 +1389,15 @@ export default function Admin() {
                       </span>
                     </td>
                     <td className="flex items-center justify-between md:table-cell px-5 py-3 font-bold text-surface-900 dark:text-surface-100">
-                      <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Total</span>
+                      <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Total</span>
                       <span>{formatPrice(searchOrderResult.order.total)}</span>
                     </td>
                     <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                      <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Estado</span>
+                      <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Estado</span>
                       <span><StatusBadge status={searchOrderResult.order.status} orderId={searchOrderResult.order.id} /></span>
                     </td>
                     <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                      <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Pago</span>
+                      <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Pago</span>
                       <span className="flex flex-col gap-1 items-end">
                         <Badge variant={searchOrderResult.order.paymentMethod === 'cash' ? 'success' : searchOrderResult.order.paymentMethod === 'transfer' ? 'warning' : 'info'} size="sm">
                           {searchOrderResult.order.paymentMethod === 'cash' ? 'Efectivo' : searchOrderResult.order.paymentMethod === 'transfer' ? 'Transferencia' : 'Mercado Pago'}
@@ -1447,7 +1447,7 @@ export default function Admin() {
                     return (
                       <tr key={order.id} className="flex flex-col md:table-row border-b md:border-b-0 border-surface-100 dark:border-surface-700 last:border-b-0 hover:bg-surface-50 dark:hover:bg-surface-800/50">
                         <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                          <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Pedido</span>
+                          <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Pedido</span>
                           <span className="text-right md:text-left">
                             <span className="font-medium text-surface-900 dark:text-surface-100">#{order.id.slice(0, 8)}</span>
                             <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
@@ -1456,11 +1456,11 @@ export default function Admin() {
                           </span>
                         </td>
                         <td className="flex items-center justify-between md:table-cell px-5 py-3 text-surface-700 dark:text-surface-300">
-                          <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Usuario</span>
+                          <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Usuario</span>
                           <span className="text-right md:text-left">{name}</span>
                         </td>
                         <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                          <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Cuadernillos</span>
+                          <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Cuadernillos</span>
                           <span className="text-right md:text-left">
                             <div className="space-y-1">
                               {items.map((item) => (
@@ -1473,11 +1473,11 @@ export default function Admin() {
                           </span>
                         </td>
                     <td className="flex items-center justify-between md:table-cell px-5 py-3 font-bold text-surface-900 dark:text-surface-100">
-                      <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Total</span>
+                      <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Total</span>
                       <span>{formatPrice(order.total)}</span>
                     </td>
                     <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                      <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Estado</span>
+                      <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Estado</span>
                       <span>
                         <button
                           onClick={() => updateOrderStatus(order.id, 'delivered')}
@@ -1522,11 +1522,11 @@ export default function Admin() {
                   {searchBookletResults.map((result, idx) => (
                     <tr key={idx} className="flex flex-col md:table-row border-b md:border-b-0 border-surface-100 dark:border-surface-700 last:border-b-0 hover:bg-surface-50 dark:hover:bg-surface-800/50">
                       <td className="flex items-center justify-between md:table-cell px-5 py-3 font-medium text-surface-900 dark:text-surface-100">
-                        <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Estudiante</span>
+                        <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Estudiante</span>
                         <span className="text-right md:text-left">{result.studentName}</span>
                       </td>
                       <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                        <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Pedido</span>
+                        <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Pedido</span>
                         <span className="text-right md:text-left">
                           <span className="font-medium text-surface-900 dark:text-surface-100">#{result.orderId.slice(0, 8)}</span>
                           <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
@@ -1535,19 +1535,19 @@ export default function Admin() {
                         </span>
                       </td>
                       <td className="flex items-center justify-between md:table-cell px-5 py-3 text-surface-700 dark:text-surface-300">
-                        <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Cuadernillo</span>
+                        <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Cuadernillo</span>
                         <span className="text-right md:text-left">{result.bookletTitle}</span>
                       </td>
                       <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                        <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Cantidad</span>
+                        <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Cantidad</span>
                         <span className="text-lg font-bold text-primary-600 dark:text-primary-400">{result.quantity}x</span>
                       </td>
                       <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                        <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Estado</span>
+                        <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Estado</span>
                         <span><StatusBadge status={result.orderStatus} orderId={result.orderId} /></span>
                       </td>
                       <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                        <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Acciones</span>
+                        <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Acciones</span>
                         <span className="flex gap-2 md:justify-end">
                           {result.orderStatus === 'pending' && (
                             <button
@@ -1642,7 +1642,7 @@ export default function Admin() {
                           return (
                             <tr key={order.id} className="flex flex-col md:table-row border-b md:border-b-0 border-surface-100 dark:border-surface-700 last:border-b-0 hover:bg-surface-50 dark:hover:bg-surface-800/50">
                               <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                                <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Pedido</span>
+                                <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Pedido</span>
                                 <span className="text-right md:text-left">
                                   <span className="font-medium text-surface-900 dark:text-surface-100">#{order.id.slice(0, 8)}</span>
                                   <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
@@ -1651,11 +1651,11 @@ export default function Admin() {
                                 </span>
                               </td>
                               <td className="flex items-center justify-between md:table-cell px-5 py-3 text-surface-700 dark:text-surface-300">
-                                <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Usuario</span>
+                                <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Usuario</span>
                                 <span className="text-right md:text-left">{studentName}</span>
                               </td>
                               <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                                <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Colegio</span>
+                                <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Colegio</span>
                                 <span className="text-right md:text-left">
                                   <div className="flex flex-wrap gap-1">
                                     {courseSchool ? (
@@ -1663,13 +1663,13 @@ export default function Admin() {
                                         {courseSchool.shortName || courseSchool.name}
                                       </span>
                                     ) : (
-                                      <span className="text-xs text-surface-400">—</span>
+                                      <span className="text-xs text-surface-400 dark:text-surface-500">—</span>
                                     )}
                                   </div>
                                 </span>
                               </td>
                               <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                                <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Cuadernillos</span>
+                                <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Cuadernillos</span>
                                 <span className="text-right md:text-left">
                                   <div className="space-y-1">
                                     {items.map((item) => (
@@ -1693,11 +1693,11 @@ export default function Admin() {
                                 </span>
                               </td>
                               <td className="flex items-center justify-between md:table-cell px-5 py-3 font-bold text-surface-900 dark:text-surface-100">
-                                <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Total</span>
+                                <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Total</span>
                                 <span>{formatPrice(order.total)}</span>
                               </td>
                               <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                                <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Estado</span>
+                                <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Estado</span>
                                 <span className="flex flex-col gap-2 items-end">
                                   <div className="flex items-center gap-2 flex-wrap justify-end">
                                     {/* Payment method badge */}
@@ -1789,23 +1789,23 @@ export default function Admin() {
                     {students.map((s) => (
                       <tr key={s.id} className="flex flex-col md:table-row border-b md:border-b-0 border-surface-100 dark:border-surface-700 last:border-b-0 hover:bg-surface-50 dark:hover:bg-surface-800/50">
                         <td className="flex items-center justify-between md:table-cell px-5 py-3 font-medium text-surface-900 dark:text-surface-100">
-                          <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Nombre</span>
+                          <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Nombre</span>
                           <span className="text-right md:text-left">{s.name}</span>
                         </td>
                         <td className="flex items-center justify-between md:table-cell px-5 py-3 text-surface-500 dark:text-surface-400">
-                          <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Email</span>
+                          <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Email</span>
                           <span className="text-right md:text-left">{s.email}</span>
                         </td>
                         <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                          <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Rol</span>
+                          <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Rol</span>
                           <span><Badge variant={s.isAdmin ? 'info' : 'neutral'} size="sm">{s.isAdmin ? 'Admin' : 'Estudiante'}</Badge></span>
                         </td>
                         <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                          <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Estado</span>
+                          <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Estado</span>
                           <span><Badge variant={s.isActive ? 'success' : 'error'} size="sm">{s.isActive ? 'Activo' : 'Inactivo'}</Badge></span>
                         </td>
                         <td className="flex items-center justify-between md:table-cell px-5 py-3">
-                          <span className="text-xs font-semibold text-surface-500 uppercase tracking-wider md:hidden">Acciones</span>
+                          <span className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider md:hidden">Acciones</span>
                           <span className="flex gap-2 md:justify-end">
                             <button
                               onClick={() => toggleStudentRole(s)}

@@ -51,7 +51,7 @@ export default function ForgotPassword() {
       <div className="flex-1 flex items-center justify-center px-6 sm:px-8 py-12 relative">
         <button
           onClick={toggle}
-          className="absolute top-4 right-4 p-2 rounded-xl text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100 transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-xl text-surface-400 dark:text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100 transition-colors"
           title={dark ? 'Modo claro' : 'Modo oscuro'}
         >
           {dark ? (
@@ -66,29 +66,29 @@ export default function ForgotPassword() {
         </button>
         <div className="w-full max-w-sm">
           <div className="lg:hidden mb-8">
-            <h1 className="text-2xl font-bold text-surface-900">FotoApp</h1>
-            <p className="text-surface-500 mt-1">Recuperá tu contraseña</p>
+            <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">FotoApp</h1>
+            <p className="text-surface-500 dark:text-surface-400 mt-1">Recuperá tu contraseña</p>
           </div>
 
           {success ? (
             <div className="text-center">
               <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold text-surface-900 mb-2">Email enviado</h2>
+              <h2 className="text-xl font-semibold text-surface-900 dark:text-surface-100 mb-2">Email enviado</h2>
               <p className="text-surface-600 dark:text-surface-400 mb-6">
                 Si el email existe, recibirás un enlace de recuperación en tu bandeja de entrada.
               </p>
-              <Link to="/login" className="text-primary-600 font-medium hover:text-primary-700">
+              <Link to="/login" className="text-primary-600 dark:text-primary-400 font-medium hover:text-primary-700 dark:hover:text-primary-400">
                 Volver al inicio de sesión
               </Link>
             </div>
           ) : (
             <>
-              <h2 className="text-xl font-semibold text-surface-900">Recuperar contraseña</h2>
-              <p className="mt-1 text-sm text-surface-500">
+              <h2 className="text-xl font-semibold text-surface-900 dark:text-surface-100">Recuperar contraseña</h2>
+              <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">
                 Ingresá tu email y te enviaremos un enlace para restablecer tu contraseña.
               </p>
 
@@ -121,8 +121,8 @@ export default function ForgotPassword() {
                 </button>
               </form>
 
-              <p className="mt-6 text-center text-sm text-surface-500">
-                <Link to="/login" className="text-primary-600 font-medium hover:text-primary-700">
+              <p className="mt-6 text-center text-sm text-surface-500 dark:text-surface-400">
+                <Link to="/login" className="text-primary-600 dark:text-primary-400 font-medium hover:text-primary-700 dark:hover:text-primary-400">
                   Volver al inicio de sesión
                 </Link>
               </p>

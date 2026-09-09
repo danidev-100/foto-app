@@ -12,19 +12,19 @@ const LEVELS = [
 
 const LEVEL_ACCENTS = {
   primaria: {
-    light: 'from-emerald-50 to-primary-50',
+    light: 'from-emerald-50 to-primary-50 dark:from-emerald-950/40 dark:to-primary-950/40',
     gradient: 'from-emerald-400 to-primary-500',
-    iconBg: 'bg-emerald-100',
-    iconColor: 'text-emerald-600',
-    hover: 'hover:ring-emerald-200',
+    iconBg: 'bg-emerald-100 dark:bg-emerald-900',
+    iconColor: 'text-emerald-600 dark:text-emerald-300',
+    hover: 'hover:ring-emerald-200 dark:hover:ring-emerald-800',
     accent: 'bg-emerald-500',
   },
   secundaria: {
-    light: 'from-sky-50 to-primary-50',
+    light: 'from-sky-50 to-primary-50 dark:from-sky-950/40 dark:to-primary-950/40',
     gradient: 'from-sky-400 to-primary-500',
-    iconBg: 'bg-sky-100',
-    iconColor: 'text-sky-600',
-    hover: 'hover:ring-sky-200',
+    iconBg: 'bg-sky-100 dark:bg-sky-900',
+    iconColor: 'text-sky-600 dark:text-sky-300',
+    hover: 'hover:ring-sky-200 dark:hover:ring-sky-800',
     accent: 'bg-sky-500',
   },
 };
@@ -32,14 +32,14 @@ const LEVEL_ACCENTS = {
 const SCHOOL_THEMES = {
   'Don Bosco': {
     gradient: 'from-blue-600 to-indigo-700',
-    light: 'from-blue-50 to-indigo-50',
-    border: 'ring-blue-200',
+    light: 'from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40',
+    border: 'ring-blue-200 dark:ring-blue-800',
     icon: '🏫',
   },
   'Rodeo del Medio': {
     gradient: 'from-amber-600 to-orange-700',
-    light: 'from-amber-50 to-orange-50',
-    border: 'ring-amber-200',
+    light: 'from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/40',
+    border: 'ring-amber-200 dark:ring-amber-800',
     icon: '🎓',
   },
 };
@@ -144,16 +144,16 @@ export default function Catalog({ onCartUpdate }) {
           <div className="mb-8">
             <button
               onClick={handleBackToCourses}
-              className="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-400 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Volver a cursos
             </button>
-            <h1 className="text-2xl font-bold text-surface-900 mt-3">{selectedCourse.name}</h1>
+            <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100 mt-3">{selectedCourse.name}</h1>
             {selectedCourse.description && (
-              <p className="mt-1 text-surface-500">{selectedCourse.description}</p>
+              <p className="mt-1 text-surface-500 dark:text-surface-400">{selectedCourse.description}</p>
             )}
           </div>
 
@@ -168,11 +168,11 @@ export default function Catalog({ onCartUpdate }) {
                 return (
                   <div
                     key={b.id}
-                    className="bg-white rounded-2xl shadow-sm ring-1 ring-surface-200/60 hover:shadow-md hover:ring-primary-200 transition-all duration-200"
+                    className="bg-white dark:bg-surface-800 rounded-2xl shadow-sm ring-1 ring-surface-200/60 dark:ring-surface-700/60 hover:shadow-md hover:ring-primary-200 dark:hover:ring-primary-800 transition-all duration-200"
                   >
                     <div className="p-5 flex items-center gap-4">
-                      <div className="hidden sm:flex w-12 h-12 rounded-xl bg-primary-50 items-center justify-center flex-shrink-0">
-                        <svg className="w-6 h-6 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className="hidden sm:flex w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-900/30 items-center justify-center flex-shrink-0">
+                        <svg className="w-6 h-6 text-primary-500 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                         </svg>
                       </div>
@@ -180,19 +180,19 @@ export default function Catalog({ onCartUpdate }) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-4">
                           <div>
-                            <h3 className="font-semibold text-surface-900">{b.title}</h3>
+                            <h3 className="font-semibold text-surface-900 dark:text-surface-100">{b.title}</h3>
                             {divisions && (
-                              <span className="inline-block mt-1 text-xs font-medium px-2.5 py-0.5 rounded-md bg-primary-50 text-primary-700 ring-1 ring-primary-200">
+                              <span className="inline-block mt-1 text-xs font-medium px-2.5 py-0.5 rounded-md bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 ring-1 ring-primary-200 dark:ring-primary-800">
                                 Div. {divisions}
                               </span>
                             )}
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-lg font-bold text-primary-600">{formatPrice(b.currentPrice)}</p>
+                            <p className="text-lg font-bold text-primary-600 dark:text-primary-400">{formatPrice(b.currentPrice)}</p>
                           </div>
                         </div>
                         {b.description && (
-                          <p className="mt-1.5 text-sm text-surface-500 line-clamp-2">{b.description}</p>
+                          <p className="mt-1.5 text-sm text-surface-500 dark:text-surface-400 line-clamp-2">{b.description}</p>
                         )}
                       </div>
 
@@ -219,14 +219,14 @@ export default function Catalog({ onCartUpdate }) {
           <div className="mb-8">
             <button
               onClick={handleBackToSchools}
-              className="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-400 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Volver a colegios
             </button>
-            <h1 className="text-2xl font-bold text-surface-900 mt-3">{selectedSchool.name}</h1>
+            <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100 mt-3">{selectedSchool.name}</h1>
           </div>
 
           {selectedSchool.courses.length === 0 ? (
@@ -251,8 +251,8 @@ export default function Catalog({ onCartUpdate }) {
                         <span className="text-xl">{level.icon}</span>
                       </div>
                       <div>
-                        <h2 className="text-2xl font-bold text-surface-900">{level.label}</h2>
-                        <p className="text-sm text-surface-500">
+                        <h2 className="text-2xl font-bold text-surface-900 dark:text-surface-100">{level.label}</h2>
+                        <p className="text-sm text-surface-500 dark:text-surface-400">
                           {levelCourses.length} {levelCourses.length === 1 ? 'curso disponible' : 'cursos disponibles'}
                         </p>
                       </div>
@@ -264,7 +264,7 @@ export default function Catalog({ onCartUpdate }) {
                           key={course.id}
                           role="button"
                           tabIndex={0}
-                          className={`relative bg-white rounded-2xl shadow-sm ring-1 ring-surface-200/60 cursor-pointer hover:shadow-lg ${accent.hover} transition-all duration-200 select-none overflow-hidden group`}
+                          className={`relative bg-white dark:bg-surface-800 rounded-2xl shadow-sm ring-1 ring-surface-200/60 dark:ring-surface-700/60 cursor-pointer hover:shadow-lg ${accent.hover} transition-all duration-200 select-none overflow-hidden group`}
                           onClick={() => handleSelectCourse(course)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
@@ -284,8 +284,8 @@ export default function Catalog({ onCartUpdate }) {
                               </div>
 
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-surface-900 truncate">{course.name}</h3>
-                                <p className="mt-1.5 text-sm text-primary-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                <h3 className="font-semibold text-surface-900 dark:text-surface-100 truncate">{course.name}</h3>
+                                <p className="mt-1.5 text-sm text-primary-600 dark:text-primary-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                                   Ver cuadernillos →
                                 </p>
                               </div>
@@ -303,8 +303,8 @@ export default function Catalog({ onCartUpdate }) {
       ) : (
         <>
           <div className="mb-10">
-            <h1 className="text-3xl font-bold text-surface-900">Colegios</h1>
-            <p className="mt-2 text-surface-500">Elegí un colegio para ver sus cursos.</p>
+            <h1 className="text-3xl font-bold text-surface-900 dark:text-surface-100">Colegios</h1>
+            <p className="mt-2 text-surface-500 dark:text-surface-400">Elegí un colegio para ver sus cursos.</p>
           </div>
 
           {schools.length === 0 ? (
@@ -333,17 +333,17 @@ export default function Catalog({ onCartUpdate }) {
                     <div className={`h-2 bg-gradient-to-r ${theme.gradient}`} />
                     <div className="p-8">
                       <div className="flex items-center gap-5">
-                        <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/80 backdrop-blur-sm shadow-sm flex items-center justify-center text-3xl">
+                        <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/80 dark:bg-surface-800/80 backdrop-blur-sm shadow-sm flex items-center justify-center text-3xl">
                           {theme.icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h2 className="text-2xl font-bold text-surface-900">{school.name}</h2>
-                          <p className="mt-1.5 text-surface-600 font-medium">
+                          <h2 className="text-2xl font-bold text-surface-900 dark:text-surface-100">{school.name}</h2>
+                          <p className="mt-1.5 text-surface-600 dark:text-surface-300 font-medium">
                             {school.courses.length} {school.courses.length === 1 ? 'curso' : 'cursos'}
                           </p>
                         </div>
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/60 backdrop-blur-sm flex items-center justify-center group-hover:translate-x-1 transition-transform">
-                          <svg className="w-5 h-5 text-surface-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/60 dark:bg-surface-800/60 backdrop-blur-sm flex items-center justify-center group-hover:translate-x-1 transition-transform">
+                          <svg className="w-5 h-5 text-surface-600 dark:text-surface-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
                         </div>
@@ -360,8 +360,8 @@ export default function Catalog({ onCartUpdate }) {
                               key={level.key}
                               className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${
                                 level.key === 'primaria'
-                                  ? 'bg-emerald-100 text-emerald-700'
-                                  : 'bg-sky-100 text-sky-700'
+                                  ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-200'
+                                  : 'bg-sky-100 dark:bg-sky-900 text-sky-700 dark:text-sky-200'
                               }`}
                             >
                               <span>{level.icon}</span>

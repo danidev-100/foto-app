@@ -55,7 +55,7 @@ export default function Register() {
         {/* Theme toggle */}
         <button
           onClick={toggle}
-          className="absolute top-4 right-4 p-2 rounded-xl text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100 transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-xl text-surface-400 dark:text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100 transition-colors"
           title={dark ? 'Modo claro' : 'Modo oscuro'}
         >
           {dark ? (
@@ -70,20 +70,20 @@ export default function Register() {
         </button>
         <div className="w-full max-w-sm">
           <div className="lg:hidden mb-8">
-            <h1 className="text-2xl font-bold text-surface-900">FotoApp</h1>
-            <p className="text-surface-500 mt-1">Creá tu cuenta</p>
+            <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">FotoApp</h1>
+            <p className="text-surface-500 dark:text-surface-400 mt-1">Creá tu cuenta</p>
           </div>
 
-          <h2 className="text-xl font-semibold text-surface-900">Crear cuenta</h2>
-          <p className="mt-1 text-sm text-surface-500">
+          <h2 className="text-xl font-semibold text-surface-900 dark:text-surface-100">Crear cuenta</h2>
+          <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">
             ¿Ya tenés cuenta?{' '}
-            <Link to="/login" className="text-primary-600 font-medium hover:text-primary-700">
+            <Link to="/login" className="text-primary-600 dark:text-primary-400 font-medium hover:text-primary-700 dark:hover:text-primary-400">
               Iniciar sesión
             </Link>
           </p>
 
           {error && (
-            <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700 ring-1 ring-red-200">
+            <div className="mt-4 rounded-xl bg-red-50 dark:bg-red-900/30 p-3 text-sm text-red-700 dark:text-red-200 ring-1 ring-red-200 dark:ring-red-700">
               {error}
             </div>
           )}
@@ -141,7 +141,7 @@ export default function Register() {
           <div className="mt-6">
             <div className="flex items-center gap-3">
               <div className="h-px flex-1 bg-surface-200 dark:bg-surface-700" />
-              <span className="text-xs text-surface-400">o registrate con</span>
+              <span className="text-xs text-surface-400 dark:text-surface-500">o registrate con</span>
               <div className="h-px flex-1 bg-surface-200 dark:bg-surface-700" />
             </div>
             <div className="mt-4 flex justify-center">
