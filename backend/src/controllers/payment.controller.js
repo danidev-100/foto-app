@@ -20,7 +20,7 @@ function getPaymentService() {
 export class PaymentController {
   async initiatePayment(req, res) {
     const { method } = req.body;
-    if (!method) return errorJSON(res, 400, 'AUTH_004', 'method is required (mercadopago or cash)');
+    if (!method) return errorJSON(res, 400, 'AUTH_004', 'method is required (mercadopago or transfer)');
 
     try {
       const result = await paymentService.initiatePayment(req.studentId, req.params.id, method);
@@ -46,18 +46,6 @@ export class PaymentController {
       console.error('MP Webhook error:', err);
     }
     return res.status(200).end();
-  }
-
-  async confirmCashPayment(req, res) {
-    try {
-      await getPaymentService().confirmCashPayment(req.params.id, req.studentId);
-      return successJSON(res, 200, { message: 'cash payment confirmed' });
-    } catch (err) {
-      if (err.code === 'INF_001') return errorJSON(res, 404, 'INF_001', 'order or payment not found');
-      if (err.code === 'PAY_006') return errorJSON(res, 400, 'PAY_006', 'payment method is not cash');
-      if (err.code === 'PAY_003') return errorJSON(res, 400, 'PAY_003', 'payment already processed');
-      return errorJSON(res, 500, 'INF_001', 'internal server error');
-    }
   }
 
   async confirmTransfer(req, res) {

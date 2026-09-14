@@ -172,16 +172,18 @@ describe('Cart page', () => {
     });
   });
 
-  it('shows checkout buttons (Mercado Pago, Efectivo, Transferencia)', async () => {
+  it('shows checkout buttons (Mercado Pago, Transferencia)', async () => {
     getCart.mockResolvedValueOnce({ data: { data: mockCartItems } });
 
     renderCart();
 
     await waitFor(() => {
       expect(screen.getByText('Pagar con Mercado Pago')).toBeInTheDocument();
-      expect(screen.getByText('Pagar en efectivo')).toBeInTheDocument();
       expect(screen.getByText('Pagar por transferencia')).toBeInTheDocument();
     });
+
+    // Cash option must no longer exist
+    expect(screen.queryByText('Pagar en efectivo')).not.toBeInTheDocument();
 
     // Also shows "Vaciar carrito" button
     expect(screen.getByText('Vaciar carrito')).toBeInTheDocument();

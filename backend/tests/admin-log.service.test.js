@@ -47,7 +47,7 @@ describe('AdminLogService.log()', () => {
 
   it('creates multiple logs and returns distinct records', async () => {
     const one = await adminLogService.log(adminId, 'update', 'booklet', 'b-test-2', { changes: { title: ['Old', 'New'] } });
-    const two = await adminLogService.log(adminId, 'confirm', 'payment', 'ord-1', { method: 'cash' });
+    const two = await adminLogService.log(adminId, 'confirm', 'payment', 'ord-1', { method: 'transfer' });
 
     expect(one.id).not.toBe(two.id);
     expect(two.action).toBe('confirm');
@@ -128,7 +128,7 @@ describe('AdminLogService.getStats()', () => {
     await adminLogService.log(adminId, 'create', 'booklet', 'stat-b-1', { title: 'Stats' });
     await adminLogService.log(adminId, 'update', 'booklet', 'stat-b-2', { title: 'Updated' });
     await adminLogService.log(adminId, 'delete', 'booklet', 'stat-b-3', { title: 'Deleted' });
-    await adminLogService.log(adminId, 'confirm', 'payment', 'stat-ord-1', { method: 'cash' });
+    await adminLogService.log(adminId, 'confirm', 'payment', 'stat-ord-1', { method: 'transfer' });
   });
 
   it('returns stats grouped by action with counts', async () => {

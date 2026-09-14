@@ -53,14 +53,10 @@ export default function Cart() {
         return;
       }
 
-      // Cash / Transfer: create order first (admin confirms payment manually)
+      // Transfer: create order first (admin confirms payment manually)
       const res = await placeOrder({ payment_method: method });
-      if (method === 'transfer') {
-        const orderId = res.data?.data?.id || '';
-        navigate(`/orders?transfer_success=true&order_id=${orderId}`);
-      } else {
-        navigate('/orders');
-      }
+      const orderId = res.data?.data?.id || '';
+      navigate(`/orders?transfer_success=true&order_id=${orderId}`);
     } catch (error) {
       console.error('Checkout failed:', error);
       const msg = error?.response?.data?.error?.message || error.message || 'Error al procesar el pago';
@@ -175,18 +171,6 @@ export default function Cart() {
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6zm4 4h-2v-2h2v2zm0-4h-2V7h2v6z"/>
             </svg>
             Pagar con Mercado Pago
-          </button>
-
-          {/* Cash Button */}
-          <button
-            onClick={() => handleCheckout('cash')}
-            disabled={processing}
-            className="w-full flex items-center justify-center gap-3 bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600 text-surface-700 dark:text-surface-200 font-semibold py-3 px-6 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed ring-1 ring-surface-200 dark:ring-surface-600"
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            Pagar en efectivo
           </button>
 
           {/* Transfer Button */}

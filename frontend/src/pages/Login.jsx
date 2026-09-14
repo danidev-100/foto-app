@@ -66,7 +66,7 @@ export default function Login() {
             </div>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center text-sm font-bold">3</div>
-              <span className="text-primary-100">Pagá online o en efectivo</span>
+              <span className="text-primary-100">Pagá online o por transferencia</span>
             </div>
           </div>
         </div>

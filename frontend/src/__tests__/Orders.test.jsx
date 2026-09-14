@@ -51,6 +51,8 @@ const mockOrder1 = {
   studentId: 's1',
   total: 3000,
   status: 'pending',
+  // Legacy order: cash can no longer be selected at checkout, but old orders
+  // must still render a safe label ('Efectivo') instead of the raw enum.
   paymentMethod: 'cash',
   paymentStatus: 'pending',
   createdAt: '2026-06-01T10:00:00.000Z',

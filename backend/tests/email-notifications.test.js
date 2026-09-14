@@ -101,7 +101,7 @@ describe('Email notification templates', () => {
 
     await svc.sendPaymentConfirmed('student@test.com', {
       orderId: 'ord-101',
-      method: 'cash',
+      method: 'transfer',
       total: 3000,
     });
 
@@ -109,7 +109,7 @@ describe('Email notification templates', () => {
     const call = mockSendMail.mock.calls[0][0];
     expect(call.subject).toContain('Pago Confirmado');
     expect(call.html).toContain('ord-101');
-    expect(call.html).toContain('efectivo');
+    expect(call.html).toContain('transferencia');
   });
 
   it('sendPaymentConfirmed shows transfer method', async () => {

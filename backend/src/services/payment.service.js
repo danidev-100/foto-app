@@ -56,10 +56,7 @@ export class PaymentService {
     if (method === 'mercadopago') {
       return this.initiateMP(order);
     }
-    if (method === 'cash') {
-      return this.initiateCash(order);
-    }
-    
+
     const err = new Error('invalid payment method');
     err.code = 'PAY_002';
     err.status = 400;
@@ -100,21 +97,6 @@ export class PaymentService {
     });
 
     return { payment, paymentUrl: pref.initPoint };
-  }
-
-  async initiateCash(order) {
-    const payment = await prisma.payment.create({
-      data: {
-        id: uuidv4(),
-        orderId: order.id,
-        method: 'cash',
-        status: 'pending',
-        amount: order.total,
-        externalReference: order.id,
-      },
-    });
-
-    return { payment };
   }
 
   async handleMPWebhook(rawBody) {
@@ -439,56 +421,4 @@ export class PaymentService {
     }).catch((e) => console.error('[Email] fetch student for payment notification failed:', e.message));
   }
 
-  async confirmCashPayment(orderId, adminId = null) {
-    const payment = await prisma.payment.findUnique({ where: { orderId } });
-    if (!payment) {
-      const err = new Error('order or payment not found');
-      err.code = 'INF_001';
-      err.status = 404;
-      throw err;
-    }
-    if (payment.method !== 'cash') {
-      const err = new Error('payment method is not cash');
-      err.code = 'PAY_006';
-      err.status = 400;
-      throw err;
-    }
-    if (payment.status !== 'pending') {
-      const err = new Error('payment already processed');
-      err.code = 'PAY_003';
-      err.status = 400;
-      throw err;
-    }
-
-    const now = new Date();
-    await prisma.payment.update({
-      where: { id: payment.id },
-      data: { status: 'approved', paidAt: now },
-    });
-
-    await prisma.order.update({
-      where: { id: orderId },
-      data: { paymentStatus: 'paid', status: 'pending' },
-    });
-
-    if (adminId) {
-      adminLogService.log(adminId, 'confirm', 'payment', orderId, { method: 'cash' }).catch(
-        (e) => console.error('[Audit] cash payment log failed:', e.message)
-      );
-    }
-
-    // Fire-and-forget payment confirmation email with student info
-    prisma.order.findUnique({
-      where: { id: orderId },
-      include: { student: { select: { email: true, name: true } } },
-    }).then((orderWithStudent) => {
-      if (!orderWithStudent?.student?.email) return;
-      const { email, name } = orderWithStudent.student;
-      emailService.sendPaymentConfirmed(email, {
-        orderId,
-        method: 'cash',
-        studentName: name,
-      }).catch((e) => console.error('[Email] cash payment confirmed failed:', e.message));
-    }).catch((e) => console.error('[Email] fetch student for payment notification failed:', e.message));
   }
-}

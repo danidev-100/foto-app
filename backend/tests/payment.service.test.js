@@ -5,8 +5,6 @@
  *   - handleMPWebhook processes payment.approved (old flow)
  *   - handleMPWebhook creates order from pending checkout (new flow)
  *   - handleMPWebhook is idempotent (same event twice)
- *   - confirmCashPayment marks payment as approved
- *   - confirmCashPayment rejects non-cash method
  *   - confirmTransferPayment marks payment as approved
  *   - confirmTransferPayment creates payment record if missing
  */
@@ -271,66 +269,6 @@ describe('handleMPWebhook', () => {
   });
 });
 
-/* ─── confirmCashPayment ───────────────────────────────── */
-
-describe('confirmCashPayment', () => {
-  it('marks cash payment as approved', async () => {
-    const orderId = 'order-1';
-    prisma.payment.findUnique.mockResolvedValue({
-      id: 'pay-1', orderId, method: 'cash', status: 'pending', amount: 2000,
-    });
-    prisma.payment.update.mockResolvedValue({ id: 'pay-1', status: 'approved' });
-    prisma.order.update.mockResolvedValue({ id: orderId, paymentStatus: 'paid' });
-
-    // Mock prisma.order.findUnique for the fire-and-forget email
-    prisma.order.findUnique.mockResolvedValue({
-      id: orderId,
-      student: { email: 'student@test.com', name: 'Student' },
-    });
-
-    const svc = makeService();
-    await svc.confirmCashPayment(orderId, 'admin-1');
-
-    expect(prisma.payment.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: 'approved' }) }),
-    );
-    expect(prisma.order.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ paymentStatus: 'paid' }) }),
-    );
-  });
-
-  it('returns error when payment not found', async () => {
-    prisma.payment.findUnique.mockResolvedValue(null);
-
-    const svc = makeService();
-    await expect(
-      svc.confirmCashPayment('nonexistent'),
-    ).rejects.toMatchObject({ code: 'INF_001', status: 404 });
-  });
-
-  it('returns error when payment method is not cash', async () => {
-    prisma.payment.findUnique.mockResolvedValue({
-      id: 'pay-2', orderId: 'order-2', method: 'mercadopago', status: 'pending',
-    });
-
-    const svc = makeService();
-    await expect(
-      svc.confirmCashPayment('order-2'),
-    ).rejects.toMatchObject({ code: 'PAY_006', status: 400 });
-  });
-
-  it('returns error when payment already processed', async () => {
-    prisma.payment.findUnique.mockResolvedValue({
-      id: 'pay-3', orderId: 'order-3', method: 'cash', status: 'approved',
-    });
-
-    const svc = makeService();
-    await expect(
-      svc.confirmCashPayment('order-3'),
-    ).rejects.toMatchObject({ code: 'PAY_003', status: 400 });
-  });
-});
-
 /* ─── confirmTransferPayment ──────────────────────────── */
 
 describe('confirmTransferPayment', () => {
@@ -422,7 +360,7 @@ describe('confirmTransferPayment', () => {
       id: orderId, studentId: 's1', total: 5000,
     });
     prisma.payment.findUnique.mockResolvedValue({
-      id: 'pay-4', orderId, method: 'cash', status: 'pending',
+      id: 'pay-4', orderId, method: 'mercadopago', status: 'pending',
     });
 
     const svc = makeService();

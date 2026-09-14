@@ -136,17 +136,17 @@ describe('Cart flow', () => {
 /* ─── PLACE ORDER ──────────────────────────────────────── */
 
 describe('POST /api/orders (place order)', () => {
-  it('places an order with cash payment', async () => {
+  it('places an order with transfer payment', async () => {
     const res = await agent
       .post('/api/orders')
       .set('Authorization', `Bearer ${userToken}`)
-      .send({ payment_method: 'cash' });
+      .send({ payment_method: 'transfer' });
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.data).toHaveProperty('id');
     expect(res.body.data.status).toBe('pending');
-    expect(res.body.data.paymentMethod).toBe('cash');
+    expect(res.body.data.paymentMethod).toBe('transfer');
     createdOrderId = res.body.data.id;
   });
 
@@ -163,7 +163,7 @@ describe('POST /api/orders (place order)', () => {
     const res = await agent
       .post('/api/orders')
       .set('Authorization', `Bearer ${userToken}`)
-      .send({ payment_method: 'cash' });
+      .send({ payment_method: 'transfer' });
 
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('CART_002');
@@ -351,7 +351,7 @@ describe('Cancel order (student)', () => {
     const orderRes = await agent
       .post('/api/orders')
       .set('Authorization', `Bearer ${userToken}`)
-      .send({ payment_method: 'cash' });
+      .send({ payment_method: 'transfer' });
 
     cancelOrderId = orderRes.body.data?.id;
   });

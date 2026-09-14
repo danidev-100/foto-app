@@ -16,6 +16,9 @@ const statusConfig = {
 
 const methodLabels = {
   mercadopago: 'Mercado Pago',
+  // Legacy read-only fallback: pre-existing orders may still carry 'cash'.
+  // Cash can no longer be selected at checkout, but old orders must render
+  // a safe label instead of the raw enum value.
   cash: 'Efectivo',
   transfer: 'Transferencia',
 };

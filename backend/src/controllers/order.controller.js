@@ -16,7 +16,7 @@ export class OrderController {
     } catch (err) {
       if (err.code === 'CART_002') return errorJSON(res, 400, 'CART_002', 'cart is empty');
       if (err.code === 'CART_001') return errorJSON(res, 400, 'CART_001', 'insufficient stock for one or more items');
-      if (err.code === 'PAY_002') return errorJSON(res, 400, 'PAY_002', "invalid payment method, must be 'mercadopago' or 'cash'");
+      if (err.code === 'PAY_002') return errorJSON(res, 400, 'PAY_002', "invalid payment method, must be 'mercadopago' or 'transfer'");
       return errorJSON(res, 500, 'INF_001', 'failed to place order');
     }
   }

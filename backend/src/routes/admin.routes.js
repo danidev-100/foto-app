@@ -59,12 +59,6 @@ router.get('/orders/search/by-booklet', (req, res) => orderController.searchOrde
 router.get('/orders/:id', (req, res) => orderController.getOrderAdmin(req, res));
 router.put('/orders/:id/status', (req, res) => orderController.updateOrderStatus(req, res));
 router.put('/orders/:orderId/items/:itemId/status', (req, res) => orderController.updateOrderItemStatus(req, res));
-router.post('/orders/:id/pay-cash', (req, res) => {
-  import('../controllers/payment.controller.js').then(({ PaymentController }) => {
-    const pc = new PaymentController();
-    pc.confirmCashPayment(req, res);
-  });
-});
 router.post('/orders/:id/confirm-transfer', (req, res) => {
   import('../controllers/payment.controller.js').then(({ PaymentController }) => {
     const pc = new PaymentController();

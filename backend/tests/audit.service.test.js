@@ -47,7 +47,7 @@ describe('AuditService.log()', () => {
 
   it('creates multiple logs and returns all fields', async () => {
     await auditService.log(adminId, 'update', 'booklet', 'b-2', { changes: { title: ['Old', 'New'] } });
-    await auditService.log(adminId, 'confirm', 'payment', 'ord-1', { method: 'cash' });
+    await auditService.log(adminId, 'confirm', 'payment', 'ord-1', { method: 'transfer' });
 
     const secondLog = await auditService.log(adminId, 'update', 'order', 'ord-1', { from: 'pending', to: 'ready' });
     expect(secondLog.action).toBe('update');
@@ -117,7 +117,7 @@ describe('AuditService.getStats()', () => {
     await auditService.log(adminId, 'create', 'booklet', 'stat-b-1', { title: 'Stats Booklet' });
     await auditService.log(adminId, 'update', 'booklet', 'stat-b-2', { title: 'Updated' });
     await auditService.log(adminId, 'delete', 'booklet', 'stat-b-3', { title: 'Deleted' });
-    await auditService.log(adminId, 'confirm', 'payment', 'stat-ord-1', { method: 'cash' });
+    await auditService.log(adminId, 'confirm', 'payment', 'stat-ord-1', { method: 'transfer' });
     await auditService.log(adminId, 'confirm', 'payment', 'stat-ord-2', { method: 'transfer' });
   });
 

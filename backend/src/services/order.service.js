@@ -42,8 +42,8 @@ function toJSONSafe(obj) {
 
 export class OrderService {
   async placeOrder(studentId, { paymentMethod }) {
-    if (paymentMethod !== 'mercadopago' && paymentMethod !== 'cash' && paymentMethod !== 'transfer') {
-      const err = new Error("invalid payment method, must be 'mercadopago', 'cash', or 'transfer'");
+    if (paymentMethod !== 'mercadopago' && paymentMethod !== 'transfer') {
+      const err = new Error("invalid payment method, must be 'mercadopago' or 'transfer'");
       err.code = 'PAY_002';
       err.status = 400;
       throw err;
@@ -155,9 +155,9 @@ export class OrderService {
       // 7. Clear cart items
       await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
 
-      // 8. Send email confirmation for offline payments only (cash/transfer)
+      // 8. Send email confirmation for offline payments (transfer only)
       //    MercadoPago handles its own confirmation flow.
-      if (paymentMethod === 'cash' || paymentMethod === 'transfer') {
+      if (paymentMethod === 'transfer') {
         prisma.student.findUnique({
           where: { id: studentId },
           select: { email: true, name: true },

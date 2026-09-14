@@ -51,12 +51,6 @@ admin.get('/orders/search/by-student', (req, res) => orderController.searchOrder
 admin.get('/orders/search/by-booklet', (req, res) => orderController.searchOrdersByBookletTitle(req, res));
 admin.get('/orders/:id', (req, res) => orderController.getOrderAdmin(req, res));
 admin.put('/orders/:id/status', (req, res) => orderController.updateOrderStatus(req, res));
-admin.post('/orders/:id/pay-cash', (req, res) => {
-  import('../controllers/payment.controller.js').then(({ PaymentController }) => {
-    const pc = new PaymentController();
-    pc.confirmCashPayment(req, res);
-  });
-});
 
 router.use('/', admin);
 

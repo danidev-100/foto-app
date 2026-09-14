@@ -7,23 +7,20 @@
  */
 
 /**
- * Order confirmation — sent when a student places an order (cash/transfer).
+ * Order confirmation — sent when a student places an order (transfer).
  * @param {string} studentName
  * @param {string} orderId
  * @param {number} total
- * @param {string} paymentMethod — 'cash' | 'transfer' | 'mercadopago'
+ * @param {string} paymentMethod — 'transfer' | 'mercadopago'
  * @returns {string} HTML
  */
 export function orderConfirmation(studentName, orderId, total, paymentMethod) {
-  const methodLabel = paymentMethod === 'cash' ? 'efectivo'
-    : paymentMethod === 'transfer' ? 'transferencia bancaria'
+  const methodLabel = paymentMethod === 'transfer' ? 'transferencia bancaria'
     : paymentMethod;
 
-  const methodNote = paymentMethod === 'cash'
-    ? 'Recordá abonar en efectivo al retirar tu pedido.'
-    : paymentMethod === 'transfer'
-      ? 'Recordá realizar la transferencia y el administrador confirmará el pago.'
-      : '';
+  const methodNote = paymentMethod === 'transfer'
+    ? 'Recordá realizar la transferencia y el administrador confirmará el pago.'
+    : '';
 
   return /* html */`
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
@@ -90,14 +87,14 @@ export function orderDelivered(studentName, orderId) {
 }
 
 /**
- * Payment confirmed — sent when admin confirms a cash or transfer payment.
+ * Payment confirmed — sent when admin confirms a transfer payment.
  * @param {string} studentName
  * @param {string} orderId
- * @param {string} method — 'cash' | 'transfer'
+ * @param {string} method — 'transfer'
  * @returns {string} HTML
  */
 export function paymentConfirmed(studentName, orderId, method) {
-  const methodLabel = method === 'cash' ? 'efectivo' : 'transferencia';
+  const methodLabel = 'transferencia';
 
   return /* html */`
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
