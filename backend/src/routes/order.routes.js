@@ -13,7 +13,6 @@ router.use(authMiddleware);
 router.post('/', (req, res) => orderController.placeOrder(req, res));
 router.get('/', (req, res) => orderController.listOrders(req, res));
 router.get('/:id', (req, res) => orderController.getOrder(req, res));
-router.post('/:id/cancel', (req, res) => orderController.cancelOrder(req, res));
 
 // Payment: initiate payment for an order
 router.post('/:id/pay', (req, res) => paymentController.initiatePayment(req, res));

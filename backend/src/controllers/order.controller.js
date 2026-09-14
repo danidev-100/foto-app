@@ -58,17 +58,6 @@ export class OrderController {
     }
   }
 
-  async cancelOrder(req, res) {
-    try {
-      const order = await orderService.cancelOrder(req.studentId, req.params.id);
-      return successJSON(res, 200, order);
-    } catch (err) {
-      if (err.code === 'INF_001') return errorJSON(res, 404, 'INF_001', 'order not found');
-      if (err.code === 'ORD_002') return errorJSON(res, 409, 'ORD_002', 'order cannot be cancelled in its current status');
-      return errorJSON(res, 500, 'INF_001', 'failed to cancel order');
-    }
-  }
-
   // Admin
   async listAllOrders(req, res) {
     try {

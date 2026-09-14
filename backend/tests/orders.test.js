@@ -6,7 +6,6 @@
  *   -> Place order -> Admin views orders
  *   -> Search order by ID, student name, booklet title
  *   -> Advance status pending -> ready -> delivered
- *   -> Cancel order -> verify stock restored
  *   -> Empty cart error
  */
 import { describe, it, expect, afterAll, beforeAll } from 'vitest';
@@ -313,70 +312,6 @@ describe('Admin: update order status', () => {
 
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe('ORD_003');
-  });
-});
-
-/* ─── CANCEL ORDER ─────────────────────────────────────── */
-
-describe('Cancel order (student)', () => {
-  let cancelOrderId;
-  let cancelBookletStock;
-
-  beforeAll(async () => {
-    // Pick an existing booklet and note its current stock
-    const res = await agent
-      .get('/api/catalog/booklets')
-      .set('Authorization', `Bearer ${userToken}`);
-    const booklets = res.body.data || [];
-
-    if (booklets.length === 0) return;
-
-    const target = booklets.find((b) => b.stock > 0);
-    if (!target) return;
-
-    cancelBookletStock = Number(target.stock);
-
-    // Add to cart
-    await agent
-      .post('/api/cart/items')
-      .set('Authorization', `Bearer ${userToken}`)
-      .send({
-        booklet_id: target.id,
-        quantity: 1,
-        unit_price: Number(target.currentPrice),
-        title: target.title,
-      });
-
-    // Place order
-    const orderRes = await agent
-      .post('/api/orders')
-      .set('Authorization', `Bearer ${userToken}`)
-      .send({ payment_method: 'transfer' });
-
-    cancelOrderId = orderRes.body.data?.id;
-  });
-
-  it('cancels a pending order', async () => {
-    if (!cancelOrderId) return;
-    const res = await agent
-      .post(`/api/orders/${cancelOrderId}/cancel`)
-      .set('Authorization', `Bearer ${userToken}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.data.status).toBe('cancelled');
-  });
-
-  it('restores stock after cancellation', async () => {
-    if (!cancelOrderId || !cancelBookletStock) return;
-    // Verify by checking the order items to find the booklet
-    const orderDetail = await agent
-      .get(`/api/orders/${cancelOrderId}`)
-      .set('Authorization', `Bearer ${userToken}`);
-    const items = orderDetail.body.data?.items || [];
-    if (items.length === 0) return;
-
-    const booklet = await prisma.booklet.findUnique({ where: { id: items[0].bookletId } });
-    expect(Number(booklet.stock)).toBeGreaterThanOrEqual(cancelBookletStock);
   });
 });
 

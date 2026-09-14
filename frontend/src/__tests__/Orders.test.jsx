@@ -6,7 +6,7 @@
  *  - Shows empty state when no orders
  *  - Shows order list
  *  - Shows payment status badges
- *  - Can cancel pending order
+ *  - Does not render a cancel action (students cannot cancel orders)
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -24,7 +24,6 @@ vi.mock('react-router-dom', async () => {
 // Mock orders API
 vi.mock('../api/orders', () => ({
   getOrders: vi.fn(),
-  cancelOrder: vi.fn(),
   initiatePayment: vi.fn(),
 }));
 
@@ -42,7 +41,7 @@ vi.mock('../components/ToastProvider', () => ({
   useToast: () => ({ toast: { success: vi.fn(), error: vi.fn() } }),
 }));
 
-import { getOrders, cancelOrder } from '../api/orders';
+import { getOrders } from '../api/orders';
 import api from '../api/client';
 
 // Mock data
@@ -160,28 +159,17 @@ describe('Orders page', () => {
     expect(screen.getAllByText('Entregado').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('can cancel a pending order', async () => {
-    getOrders
-      .mockResolvedValueOnce({ data: { data: mockOrdersData } }) // initial
-      .mockResolvedValueOnce({ data: { data: [mockOrdersData[1]] } }); // after cancel
-
-    cancelOrder.mockResolvedValueOnce({ data: { success: true } });
+  it('does not render a cancel action for a pending order', async () => {
+    getOrders.mockResolvedValueOnce({ data: { data: mockOrdersData } });
 
     renderOrders();
-    const user = userEvent.setup();
 
     await waitFor(() => {
       expect(screen.getByText('Matemática U1')).toBeInTheDocument();
     });
 
-    // Find cancel buttons (the pending order has Cancelar button)
-    const cancelBtns = screen.getAllByText('Cancelar');
-    expect(cancelBtns.length).toBeGreaterThanOrEqual(1);
-
-    await user.click(cancelBtns[0]);
-
-    await waitFor(() => {
-      expect(cancelOrder).toHaveBeenCalledWith(mockOrder1.id);
-    });
+    // Students can no longer cancel orders — the pending order must NOT
+    // expose any "Cancelar" button.
+    expect(screen.queryByText('Cancelar')).not.toBeInTheDocument();
   });
 });

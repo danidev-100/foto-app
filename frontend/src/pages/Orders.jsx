@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getOrders, cancelOrder, initiatePayment, setPaymentReference } from '../api/orders';
+import { getOrders, initiatePayment, setPaymentReference } from '../api/orders';
 import api from '../api/client';
 import Badge from '../components/Badge';
 import EmptyState from '../components/EmptyState';
@@ -11,6 +11,9 @@ const statusConfig = {
   pending: { label: 'Pendiente', className: 'badge bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 ring-1 ring-amber-400 dark:ring-amber-700' },
   ready: { label: 'Listo', className: 'badge bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 ring-1 ring-blue-400 dark:ring-blue-700' },
   delivered: { label: 'Entregado', className: 'badge bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 ring-1 ring-green-400 dark:ring-green-700' },
+  // Legacy read-only fallback: pre-existing orders may still carry 'cancelled'.
+  // Students can no longer cancel orders, but old cancelled orders must render
+  // a safe label instead of the raw enum value.
   cancelled: { label: 'Cancelado', className: 'badge bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800' },
 };
 
@@ -123,21 +126,6 @@ export default function Orders() {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, []);
-
-  const handleCancel = async (id) => {
-    setActionLoading(`cancel-${id}`);
-    try {
-      await cancelOrder(id);
-      const { data } = await getOrders();
-      const flat = (data.data || []).map(d => ({
-        ...d.order,
-        items: d.items || []
-      }));
-      setOrders(flat);
-    } finally {
-      setActionLoading(null);
-    }
-  };
 
   const handlePay = async (id) => {
     setActionLoading(`pay-${id}`);
@@ -287,8 +275,7 @@ export default function Orders() {
           {visibleOrders.map((order) => {
             const status = statusConfig[order.status] || statusConfig.pending;
             const showPayButton = order.paymentMethod === 'mercadopago' && order.paymentStatus !== 'paid' && order.status !== 'cancelled';
-            const showCancelButton = order.status === 'pending';
-            const isLoading = actionLoading === `cancel-${order.id}` || actionLoading === `pay-${order.id}`;
+            const isLoading = actionLoading === `pay-${order.id}`;
 
             return (
               <div key={order.id} className="card overflow-hidden">
@@ -333,7 +320,7 @@ export default function Orders() {
                 {/* Footer */}
                 <div className="px-5 py-4 bg-surface-50 dark:bg-surface-800/50 flex items-center justify-between">
                   <span className="text-lg font-bold text-surface-900 dark:text-surface-100">{formatPrice(order.total)}</span>
-                  {(showPayButton || showCancelButton) && (
+                  {showPayButton && (
                     <div className="flex gap-2 flex-wrap">
                       {showPayButton && (
                         <button
@@ -347,15 +334,6 @@ export default function Orders() {
                               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                             </svg>
                           ) : 'Pagar con MP'}
-                        </button>
-                      )}
-                      {showCancelButton && (
-                        <button
-                          onClick={() => handleCancel(order.id)}
-                          disabled={isLoading}
-                          className="btn-secondary text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 ring-red-200 dark:ring-red-800"
-                        >
-                          Cancelar
                         </button>
                       )}
                     </div>
